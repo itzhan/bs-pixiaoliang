@@ -34,6 +34,9 @@ public class VehicleServiceImpl extends ServiceImpl<VehicleMapper, Vehicle> impl
         );
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.parking.smart.mapper.UserMapper userMapper;
+
     @Override
     public PageResult<Vehicle> getVehicles(Integer page, Integer size, String keyword, Long userId) {
         Page<Vehicle> pageParam = new Page<>(page, size);
@@ -56,7 +59,17 @@ public class VehicleServiceImpl extends ServiceImpl<VehicleMapper, Vehicle> impl
         wrapper.orderByDesc(Vehicle::getCreatedAt);
 
         Page<Vehicle> result = page(pageParam, wrapper);
+        fillVehicleNames(result.getRecords());
         return PageResult.from(result);
+    }
+
+    private void fillVehicleNames(java.util.List<Vehicle> list) {
+        if (list == null || list.isEmpty()) return;
+        java.util.Set<Long> userIds = list.stream().map(Vehicle::getUserId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        if (userIds.isEmpty()) return;
+        java.util.Map<Long, String> nameMap = new java.util.HashMap<>();
+        userMapper.selectBatchIds(userIds).forEach(u -> nameMap.put(u.getId(), u.getRealName() != null ? u.getRealName() : u.getUsername()));
+        list.forEach(v -> v.setUserName(nameMap.get(v.getUserId())));
     }
 
     @Override

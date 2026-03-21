@@ -46,12 +46,11 @@ const loading = ref(false)
 const dataSource = ref<VehicleRecord[]>([])
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '车牌号', dataIndex: 'plateNumber', width: 130 },
   { title: '车辆类型', dataIndex: 'vehicleType', width: 120, key: 'vehicleType' },
   { title: '品牌', dataIndex: 'brand', width: 120 },
   { title: '颜色', dataIndex: 'color', width: 90 },
-  { title: '所属用户ID', dataIndex: 'userId', width: 110 },
+  { title: '所属用户', dataIndex: 'userName', width: 110 },
   { title: '默认车辆', dataIndex: 'isDefault', width: 100, key: 'isDefault' },
   { title: '创建时间', dataIndex: 'createdAt', width: 180, key: 'createdAt' },
   { title: '操作', key: 'action', width: 100, fixed: 'right' as const },

@@ -104,13 +104,18 @@
         <a-form-item label="车牌号" required>
           <a-input v-model:value="entryForm.plateNumber" placeholder="请输入车牌号" />
         </a-form-item>
-        <a-form-item label="车位ID" required>
-          <a-input-number
+        <a-form-item label="选择车位" required>
+          <a-select
             v-model:value="entryForm.spaceId"
-            placeholder="请输入车位ID"
-            :min="1"
+            placeholder="请选择空闲车位"
+            show-search
+            :filter-option="filterSpaceOption"
             style="width: 100%"
-          />
+          >
+            <a-select-option v-for="s in availableSpaces" :key="s.id" :value="s.id">
+              {{ s.spaceNumber }}（{{ s.areaName || '未知区域' }}）
+            </a-select-option>
+          </a-select>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -139,7 +144,7 @@
       <a-descriptions :column="1" bordered size="small" v-if="currentRecord">
         <a-descriptions-item label="订单号">{{ currentRecord.orderNo }}</a-descriptions-item>
         <a-descriptions-item label="车牌号">{{ currentRecord.plateNumber }}</a-descriptions-item>
-        <a-descriptions-item label="车位ID">{{ currentRecord.spaceId }}</a-descriptions-item>
+        <a-descriptions-item label="车位号">{{ currentRecord.spaceNumber || currentRecord.spaceId }}</a-descriptions-item>
         <a-descriptions-item label="入场时间">{{ formatDate(currentRecord.entryTime) }}</a-descriptions-item>
         <a-descriptions-item label="出场时间">{{ formatDate(currentRecord.exitTime) }}</a-descriptions-item>
         <a-descriptions-item label="时长(分钟)">{{ currentRecord.duration ?? '-' }}</a-descriptions-item>
@@ -164,6 +169,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { getAllOrders, vehicleEntry, vehicleExit, markAbnormal } from '@/api/order'
+import { getAvailableSpaces } from '@/api/parkingSpace'
 
 /* ---------- Status Maps ---------- */
 const orderStatusMap: Record<number, { label: string; color: string }> = {
@@ -180,10 +186,9 @@ const paymentStatusMap: Record<number, { label: string; color: string }> = {
 
 /* ---------- Columns ---------- */
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '订单号', dataIndex: 'orderNo', width: 160 },
   { title: '车牌号', dataIndex: 'plateNumber', width: 120 },
-  { title: '车位ID', dataIndex: 'spaceId', width: 90 },
+  { title: '车位号', dataIndex: 'spaceNumber', width: 100 },
   { title: '入场时间', dataIndex: 'entryTime', width: 170 },
   { title: '出场时间', dataIndex: 'exitTime', width: 170 },
   { title: '时长(分钟)', dataIndex: 'duration', width: 100 },
@@ -213,6 +218,18 @@ const pagination = reactive({
 const entryModalVisible = ref(false)
 const entryLoading = ref(false)
 const entryForm = reactive({ plateNumber: '', spaceId: undefined as number | undefined })
+const availableSpaces = ref<any[]>([])
+
+function filterSpaceOption(input: string, option: any) {
+  return option.children?.[0]?.children?.toLowerCase?.()?.includes?.(input.toLowerCase()) ?? false
+}
+
+async function loadAvailableSpaces() {
+  try {
+    const res: any = await getAvailableSpaces()
+    availableSpaces.value = res.data || []
+  } catch { /* ignore */ }
+}
 
 /* Exit modal */
 const exitModalVisible = ref(false)
@@ -280,6 +297,7 @@ const handleTableChange = (pag: any) => {
 const openEntryModal = () => {
   entryForm.plateNumber = ''
   entryForm.spaceId = undefined
+  loadAvailableSpaces()
   entryModalVisible.value = true
 }
 
@@ -289,7 +307,7 @@ const handleEntry = async () => {
     return
   }
   if (!entryForm.spaceId) {
-    message.warning('请输入车位ID')
+    message.warning('请选择车位')
     return
   }
   entryLoading.value = true

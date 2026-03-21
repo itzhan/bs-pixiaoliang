@@ -54,6 +54,14 @@ public class ParkingOrder {
 
     private String remark;
 
+    /** 车位号（非持久化，列表展示用） */
+    @TableField(exist = false)
+    private String spaceNumber;
+
+    /** 区域名称（非持久化，列表展示用） */
+    @TableField(exist = false)
+    private String areaName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

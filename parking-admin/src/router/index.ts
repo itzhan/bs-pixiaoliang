@@ -95,18 +95,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/EntryExitLogView.vue'),
         meta: { title: '出入日志' },
       },
-      {
-        path: 'settings',
-        name: 'SystemSettings',
-        component: () => import('@/views/SystemSettings.vue'),
-        meta: { title: '系统设置' },
-      },
-      {
-        path: 'audit-logs',
-        name: 'AuditLogView',
-        component: () => import('@/views/AuditLogView.vue'),
-        meta: { title: '审计日志' },
-      },
     ],
   },
   {

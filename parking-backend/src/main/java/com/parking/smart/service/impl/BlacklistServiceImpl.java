@@ -22,6 +22,9 @@ import java.time.LocalDateTime;
 @Service
 public class BlacklistServiceImpl extends ServiceImpl<BlacklistMapper, Blacklist> implements BlacklistService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.parking.smart.mapper.UserMapper userMapper;
+
     @Override
     public PageResult<Blacklist> getBlacklist(Integer page, Integer size, Integer status, String keyword) {
         LambdaQueryWrapper<Blacklist> wrapper = new LambdaQueryWrapper<Blacklist>()
@@ -30,6 +33,16 @@ public class BlacklistServiceImpl extends ServiceImpl<BlacklistMapper, Blacklist
                 .orderByDesc(Blacklist::getCreatedAt);
 
         IPage<Blacklist> iPage = baseMapper.selectPage(new Page<>(page, size), wrapper);
+        // 填充操作员名称
+        java.util.List<Blacklist> records = iPage.getRecords();
+        if (records != null && !records.isEmpty()) {
+            java.util.Set<Long> opIds = records.stream().map(Blacklist::getOperatorId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+            if (!opIds.isEmpty()) {
+                java.util.Map<Long, String> nameMap = new java.util.HashMap<>();
+                userMapper.selectBatchIds(opIds).forEach(u -> nameMap.put(u.getId(), u.getRealName() != null ? u.getRealName() : u.getUsername()));
+                records.forEach(r -> r.setOperatorName(nameMap.get(r.getOperatorId())));
+            }
+        }
         return PageResult.from(iPage);
     }
 

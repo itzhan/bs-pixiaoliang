@@ -35,6 +35,10 @@ public class ParkingSpace {
      */
     private BigDecimal hourlyRate;
 
+    /** 区域名称（非持久化） */
+    @TableField(exist = false)
+    private String areaName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

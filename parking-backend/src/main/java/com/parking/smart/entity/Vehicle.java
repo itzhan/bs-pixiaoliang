@@ -33,6 +33,10 @@ public class Vehicle {
      */
     private Integer isDefault = 0;
 
+    /** 用户名（非持久化） */
+    @TableField(exist = false)
+    private String userName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

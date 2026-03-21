@@ -115,7 +115,7 @@ public class ParkingAreaServiceImpl extends ServiceImpl<ParkingAreaMapper, Parki
         area.setAvailableSpaces(request.getTotalSpaces());
 
         if (StrUtil.isNotBlank(request.getFloorNumber())) {
-            area.setFloorNumber(Integer.parseInt(request.getFloorNumber()));
+            area.setFloorNumber(request.getFloorNumber());
         }
         if (StrUtil.isNotBlank(request.getAreaType())) {
             area.setAreaType(request.getAreaType());
@@ -161,7 +161,7 @@ public class ParkingAreaServiceImpl extends ServiceImpl<ParkingAreaMapper, Parki
             area.setAvailableSpaces(Math.max(newAvailable, 0));
         }
         if (StrUtil.isNotBlank(request.getFloorNumber())) {
-            area.setFloorNumber(Integer.parseInt(request.getFloorNumber()));
+            area.setFloorNumber(request.getFloorNumber());
         }
         if (StrUtil.isNotBlank(request.getAreaType())) {
             area.setAreaType(request.getAreaType());

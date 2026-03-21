@@ -22,7 +22,7 @@
         </a-select>
         <a-input
           v-model:value="searchParams.keyword"
-          placeholder="搜索预约编号 / 车辆ID / 用户ID"
+          placeholder="搜索预约编号"
           allow-clear
           style="width: 280px"
           @press-enter="handleSearch"
@@ -57,8 +57,8 @@
         <template v-if="column.dataIndex === 'endTime'">
           {{ formatDate(record.endTime) }}
         </template>
-        <template v-if="column.dataIndex === 'createTime'">
-          {{ formatDate(record.createTime) }}
+        <template v-if="column.dataIndex === 'createdAt'">
+          {{ formatDate(record.createdAt) }}
         </template>
       </template>
     </a-table>
@@ -82,16 +82,15 @@ const statusMap: Record<number, { label: string; color: string }> = {
 
 /* ---------- Columns ---------- */
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '预约编号', dataIndex: 'reservationNo', width: 160 },
-  { title: '车位ID', dataIndex: 'spaceId', width: 90 },
-  { title: '车辆ID', dataIndex: 'vehicleId', width: 90 },
-  { title: '用户ID', dataIndex: 'userId', width: 90 },
+  { title: '用户', dataIndex: 'userName', width: 100 },
+  { title: '车牌号', dataIndex: 'plateNumber', width: 120 },
+  { title: '车位号', dataIndex: 'spaceNumber', width: 100 },
   { title: '开始时间', dataIndex: 'startTime', width: 170 },
   { title: '结束时间', dataIndex: 'endTime', width: 170 },
   { title: '状态', dataIndex: 'status', width: 100 },
   { title: '金额', dataIndex: 'amount', width: 100 },
-  { title: '创建时间', dataIndex: 'createTime', width: 170 },
+  { title: '创建时间', dataIndex: 'createdAt', width: 170 },
 ]
 
 /* ---------- State ---------- */

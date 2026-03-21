@@ -39,9 +39,8 @@ const columns = [
   { title: '标题', dataIndex: 'title', ellipsis: true },
   { title: '类型', dataIndex: 'announcementType', width: 100 },
   { title: '状态', dataIndex: 'status', width: 100 },
-  { title: '发布者ID', dataIndex: 'publisherId', width: 100 },
-  { title: '发布时间', dataIndex: 'publishTime', width: 170 },
-  { title: '创建时间', dataIndex: 'createTime', width: 170 },
+  { title: '发布时间', dataIndex: 'publishedAt', width: 170 },
+  { title: '创建时间', dataIndex: 'createdAt', width: 170 },
   { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
 ]
 
@@ -237,12 +236,12 @@ onMounted(fetchData)
           </a-tag>
         </template>
 
-        <template v-else-if="column.dataIndex === 'publishTime'">
-          {{ formatDate(record.publishTime) }}
+        <template v-else-if="column.dataIndex === 'publishedAt'">
+          {{ formatDate(record.publishedAt) }}
         </template>
 
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{ formatDate(record.createTime) }}
+        <template v-else-if="column.dataIndex === 'createdAt'">
+          {{ formatDate(record.createdAt) }}
         </template>
 
         <template v-else-if="column.key === 'action'">

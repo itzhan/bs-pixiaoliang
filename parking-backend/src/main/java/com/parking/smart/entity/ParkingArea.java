@@ -32,9 +32,9 @@ public class ParkingArea {
     private Integer availableSpaces;
 
     /**
-     * 楼层号
+     * 楼层号（如 B1、1F 等）
      */
-    private Integer floorNumber;
+    private String floorNumber;
 
     /**
      * 区域类型：INDOOR-室内，OUTDOOR-室外

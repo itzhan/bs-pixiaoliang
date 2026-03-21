@@ -22,15 +22,14 @@ const dataSource = ref<any[]>([])
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 })
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
-  { title: '用户ID', dataIndex: 'userId', width: 90 },
-  { title: '订单ID', dataIndex: 'orderId', width: 90 },
+  { title: '用户', dataIndex: 'userName', width: 100 },
+  { title: '订单号', dataIndex: 'orderNo', width: 160 },
   { title: '评分', dataIndex: 'rating', width: 180 },
   { title: '评价内容', dataIndex: 'content', ellipsis: true },
   { title: '回复', dataIndex: 'reply', ellipsis: true },
-  { title: '回复时间', dataIndex: 'replyTime', width: 170 },
+  { title: '回复时间', dataIndex: 'replyAt', width: 170 },
   { title: '状态', dataIndex: 'status', width: 90 },
-  { title: '创建时间', dataIndex: 'createTime', width: 170 },
+  { title: '创建时间', dataIndex: 'createdAt', width: 170 },
   { title: '操作', key: 'action', width: 160, fixed: 'right' as const },
 ]
 
@@ -174,12 +173,12 @@ onMounted(fetchData)
           </a-tag>
         </template>
 
-        <template v-else-if="column.dataIndex === 'replyTime'">
-          {{ formatDate(record.replyTime) }}
+        <template v-else-if="column.dataIndex === 'replyAt'">
+          {{ formatDate(record.replyAt) }}
         </template>
 
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{ formatDate(record.createTime) }}
+        <template v-else-if="column.dataIndex === 'createdAt'">
+          {{ formatDate(record.createdAt) }}
         </template>
 
         <template v-else-if="column.key === 'action'">

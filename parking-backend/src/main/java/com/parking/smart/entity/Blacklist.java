@@ -33,6 +33,10 @@ public class Blacklist {
      */
     private Long operatorId;
 
+    /** 操作员名称（非持久化） */
+    @TableField(exist = false)
+    private String operatorName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

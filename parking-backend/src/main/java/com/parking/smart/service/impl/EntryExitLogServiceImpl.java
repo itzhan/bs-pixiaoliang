@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EntryExitLogServiceImpl extends ServiceImpl<EntryExitLogMapper, EntryExitLog> implements EntryExitLogService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.parking.smart.mapper.ParkingOrderMapper parkingOrderMapper;
+
     @Override
     public PageResult<EntryExitLog> getLogs(Integer page, Integer size, String plateNumber, String logType) {
         LambdaQueryWrapper<EntryExitLog> wrapper = new LambdaQueryWrapper<>();
@@ -29,6 +32,16 @@ public class EntryExitLogServiceImpl extends ServiceImpl<EntryExitLogMapper, Ent
         }
         wrapper.orderByDesc(EntryExitLog::getCreatedAt);
         IPage<EntryExitLog> iPage = page(new Page<>(page, size), wrapper);
+        // 填充订单号
+        java.util.List<EntryExitLog> records = iPage.getRecords();
+        if (records != null && !records.isEmpty()) {
+            java.util.Set<Long> orderIds = records.stream().map(EntryExitLog::getOrderId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+            if (!orderIds.isEmpty()) {
+                java.util.Map<Long, String> orderNoMap = new java.util.HashMap<>();
+                parkingOrderMapper.selectBatchIds(orderIds).forEach(o -> orderNoMap.put(o.getId(), o.getOrderNo()));
+                records.forEach(r -> r.setOrderNo(orderNoMap.get(r.getOrderId())));
+            }
+        }
         return PageResult.from(iPage);
     }
 

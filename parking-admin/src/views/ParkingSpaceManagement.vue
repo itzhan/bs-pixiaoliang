@@ -90,7 +90,6 @@ const loading = ref(false)
 const dataSource = ref<SpaceRecord[]>([])
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '车位号', dataIndex: 'spaceNumber', width: 120 },
   { title: '所属区域', dataIndex: 'areaId', width: 130, key: 'areaId' },
   { title: '车位类型', dataIndex: 'spaceType', width: 110, key: 'spaceType' },

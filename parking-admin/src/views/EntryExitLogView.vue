@@ -22,12 +22,11 @@ const dataSource = ref<any[]>([])
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 })
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '车牌号', dataIndex: 'plateNumber', width: 130 },
   { title: '日志类型', dataIndex: 'logType', width: 110 },
   { title: '闸机名称', dataIndex: 'gateName', ellipsis: true },
-  { title: '关联订单ID', dataIndex: 'orderId', width: 120 },
-  { title: '记录时间', dataIndex: 'recordTime', width: 180 },
+  { title: '订单号', dataIndex: 'orderNo', width: 160 },
+  { title: '记录时间', dataIndex: 'createdAt', width: 180 },
 ]
 
 async function fetchData() {
@@ -134,8 +133,8 @@ onMounted(fetchData)
           </a-tag>
         </template>
 
-        <template v-else-if="column.dataIndex === 'recordTime'">
-          {{ formatDate(record.recordTime) }}
+        <template v-else-if="column.dataIndex === 'createdAt'">
+          {{ formatDate(record.createdAt) }}
         </template>
       </template>
     </a-table>

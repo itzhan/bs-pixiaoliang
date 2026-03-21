@@ -23,6 +23,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> implements ReviewService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.parking.smart.mapper.UserMapper userMapper;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.parking.smart.mapper.ParkingOrderMapper parkingOrderMapper;
+
     @Override
     public Review createReview(ReviewRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -66,7 +72,26 @@ public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> impleme
         }
         wrapper.orderByDesc(Review::getCreatedAt);
         IPage<Review> iPage = page(new Page<>(page, size), wrapper);
+        fillReviewNames(iPage.getRecords());
         return PageResult.from(iPage);
+    }
+
+    private void fillReviewNames(java.util.List<Review> list) {
+        if (list == null || list.isEmpty()) return;
+        java.util.Set<Long> userIds = list.stream().map(Review::getUserId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> userNameMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            userMapper.selectBatchIds(userIds).forEach(u -> userNameMap.put(u.getId(), u.getRealName() != null ? u.getRealName() : u.getUsername()));
+        }
+        java.util.Set<Long> orderIds = list.stream().map(Review::getOrderId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> orderNoMap = new java.util.HashMap<>();
+        if (!orderIds.isEmpty()) {
+            parkingOrderMapper.selectBatchIds(orderIds).forEach(o -> orderNoMap.put(o.getId(), o.getOrderNo()));
+        }
+        for (Review r : list) {
+            r.setUserName(userNameMap.get(r.getUserId()));
+            r.setOrderNo(orderNoMap.get(r.getOrderId()));
+        }
     }
 
     @Override

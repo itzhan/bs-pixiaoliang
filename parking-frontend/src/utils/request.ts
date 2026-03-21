@@ -48,7 +48,10 @@ request.interceptors.response.use(
       message.error('登录已过期，请重新登录')
       window.location.href = '/login'
     } else if (status === 403) {
-      message.error('没有权限访问')
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      message.warning('请先登录后再操作')
+      window.location.href = '/login'
     } else if (status === 404) {
       message.error('请求的资源不存在')
     } else if (status === 500) {

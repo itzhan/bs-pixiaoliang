@@ -98,6 +98,9 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment> impl
         return PageResult.from(iPage);
     }
 
+    @Autowired
+    private com.parking.smart.mapper.UserMapper userMapper;
+
     @Override
     public PageResult<Payment> getAllPayments(Integer page, Integer size, Integer status, String keyword) {
         LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<Payment>()
@@ -106,6 +109,27 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentMapper, Payment> impl
                 .orderByDesc(Payment::getCreatedAt);
 
         IPage<Payment> iPage = baseMapper.selectPage(new Page<>(page, size), wrapper);
+        fillPaymentNames(iPage.getRecords());
         return PageResult.from(iPage);
+    }
+
+    private void fillPaymentNames(java.util.List<Payment> list) {
+        if (list == null || list.isEmpty()) return;
+        // 订单号
+        java.util.Set<Long> orderIds = list.stream().map(Payment::getOrderId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> orderNoMap = new java.util.HashMap<>();
+        if (!orderIds.isEmpty()) {
+            parkingOrderMapper.selectBatchIds(orderIds).forEach(o -> orderNoMap.put(o.getId(), o.getOrderNo()));
+        }
+        // 用户名
+        java.util.Set<Long> userIds = list.stream().map(Payment::getUserId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> userNameMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            userMapper.selectBatchIds(userIds).forEach(u -> userNameMap.put(u.getId(), u.getRealName() != null ? u.getRealName() : u.getUsername()));
+        }
+        for (Payment p : list) {
+            p.setOrderNo(orderNoMap.get(p.getOrderId()));
+            p.setUserName(userNameMap.get(p.getUserId()));
+        }
     }
 }

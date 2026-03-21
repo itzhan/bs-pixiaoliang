@@ -48,11 +48,11 @@
             {{ record.status === 1 ? '生效中' : '已移除' }}
           </a-tag>
         </template>
-        <template v-if="column.dataIndex === 'addTime'">
-          {{ formatDate(record.addTime) }}
+        <template v-if="column.dataIndex === 'blockedAt'">
+          {{ formatDate(record.blockedAt) }}
         </template>
-        <template v-if="column.dataIndex === 'removeTime'">
-          {{ formatDate(record.removeTime) }}
+        <template v-if="column.dataIndex === 'removedAt'">
+          {{ formatDate(record.removedAt) }}
         </template>
         <template v-if="column.key === 'action'">
           <a-popconfirm
@@ -101,13 +101,12 @@ import { getBlacklist, addToBlacklist, removeFromBlacklist } from '@/api/blackli
 
 /* ---------- Columns ---------- */
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '车牌号', dataIndex: 'plateNumber', width: 130 },
   { title: '原因', dataIndex: 'reason', ellipsis: true },
   { title: '状态', dataIndex: 'status', width: 100 },
-  { title: '加入时间', dataIndex: 'addTime', width: 170 },
-  { title: '移除时间', dataIndex: 'removeTime', width: 170 },
-  { title: '操作员ID', dataIndex: 'operatorId', width: 100 },
+  { title: '加入时间', dataIndex: 'blockedAt', width: 170 },
+  { title: '移除时间', dataIndex: 'removedAt', width: 170 },
+  { title: '操作员', dataIndex: 'operatorName', width: 100 },
   { title: '操作', key: 'action', width: 100, fixed: 'right' as const },
 ]
 

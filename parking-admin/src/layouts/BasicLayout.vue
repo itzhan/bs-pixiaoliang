@@ -8,7 +8,6 @@ import {
   MoneyCollectOutlined,
   TeamOutlined,
   FileTextOutlined,
-  SettingOutlined,
   LogoutOutlined,
   UserOutlined,
   MenuFoldOutlined,
@@ -48,8 +47,6 @@ watch(
       '/blacklist': 'user',
       '/announcements': 'content',
       '/reviews': 'content',
-      '/settings': 'system',
-      '/audit-logs': 'system',
     }
     const group = menuGroupMap[path]
     if (group && !openKeys.value.includes(group)) {
@@ -106,15 +103,7 @@ const menuItems = computed<ItemType[]>(() => [
       { key: '/reviews', label: '评价管理' },
     ],
   },
-  {
-    key: 'system',
-    icon: () => h(SettingOutlined),
-    label: '系统管理',
-    children: [
-      { key: '/settings', label: '系统设置' },
-      { key: '/audit-logs', label: '审计日志' },
-    ],
-  },
+
 ])
 
 function onMenuClick({ key }: { key: string }) {

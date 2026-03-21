@@ -37,7 +37,6 @@ const loading = ref(false)
 const dataSource = ref<UserRecord[]>([])
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '用户名', dataIndex: 'username', width: 120 },
   { title: '真实姓名', dataIndex: 'realName', width: 120 },
   { title: '手机号', dataIndex: 'phone', width: 140 },

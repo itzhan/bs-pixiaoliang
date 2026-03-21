@@ -20,7 +20,7 @@
         </a-select>
         <a-input
           v-model:value="searchParams.keyword"
-          placeholder="搜索支付单号 / 订单ID / 用户ID"
+          placeholder="搜索支付单号"
           allow-clear
           style="width: 280px"
           @press-enter="handleSearch"
@@ -54,8 +54,8 @@
             {{ statusMap[record.status]?.label ?? '未知' }}
           </a-tag>
         </template>
-        <template v-if="column.dataIndex === 'paymentTime'">
-          {{ formatDate(record.paymentTime) }}
+        <template v-if="column.dataIndex === 'paidAt'">
+          {{ formatDate(record.paidAt) }}
         </template>
       </template>
     </a-table>
@@ -84,14 +84,13 @@ const statusMap: Record<number, { label: string; color: string }> = {
 
 /* ---------- Columns ---------- */
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
   { title: '支付单号', dataIndex: 'paymentNo', width: 170 },
-  { title: '订单ID', dataIndex: 'orderId', width: 90 },
-  { title: '用户ID', dataIndex: 'userId', width: 90 },
+  { title: '订单号', dataIndex: 'orderNo', width: 160 },
+  { title: '用户', dataIndex: 'userName', width: 100 },
   { title: '金额(¥)', dataIndex: 'amount', width: 100 },
   { title: '支付方式', dataIndex: 'paymentMethod', width: 110 },
   { title: '状态', dataIndex: 'status', width: 100 },
-  { title: '支付时间', dataIndex: 'paymentTime', width: 170 },
+  { title: '支付时间', dataIndex: 'paidAt', width: 170 },
   { title: '备注', dataIndex: 'remark', ellipsis: true },
 ]
 

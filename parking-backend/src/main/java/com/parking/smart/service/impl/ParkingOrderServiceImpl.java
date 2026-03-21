@@ -298,7 +298,36 @@ public class ParkingOrderServiceImpl extends ServiceImpl<ParkingOrderMapper, Par
                 .orderByDesc(ParkingOrder::getCreatedAt);
 
         IPage<ParkingOrder> iPage = baseMapper.selectPage(new Page<>(page, size), wrapper);
+        fillOrderNames(iPage.getRecords());
         return PageResult.from(iPage);
+    }
+
+    /** 批量填充订单的车位号和区域名 */
+    private void fillOrderNames(java.util.List<ParkingOrder> orders) {
+        if (orders == null || orders.isEmpty()) return;
+        java.util.Set<Long> spaceIds = orders.stream()
+                .map(ParkingOrder::getSpaceId).filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        if (spaceIds.isEmpty()) return;
+        java.util.List<ParkingSpace> spaces = parkingSpaceMapper.selectBatchIds(spaceIds);
+        java.util.Map<Long, ParkingSpace> spaceMap = spaces.stream()
+                .collect(java.util.stream.Collectors.toMap(ParkingSpace::getId, s -> s));
+        // 获取区域名称
+        java.util.Set<Long> areaIds = spaces.stream()
+                .map(ParkingSpace::getAreaId).filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> areaNameMap = new java.util.HashMap<>();
+        if (!areaIds.isEmpty()) {
+            java.util.List<ParkingArea> areas = parkingAreaMapper.selectBatchIds(areaIds);
+            areas.forEach(a -> areaNameMap.put(a.getId(), a.getName()));
+        }
+        for (ParkingOrder order : orders) {
+            ParkingSpace space = spaceMap.get(order.getSpaceId());
+            if (space != null) {
+                order.setSpaceNumber(space.getSpaceNumber());
+                order.setAreaName(areaNameMap.get(space.getAreaId()));
+            }
+        }
     }
 
     @Override

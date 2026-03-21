@@ -41,6 +41,14 @@ public class Payment {
 
     private String remark;
 
+    /** 订单号（非持久化） */
+    @TableField(exist = false)
+    private String orderNo;
+
+    /** 用户名（非持久化） */
+    @TableField(exist = false)
+    private String userName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

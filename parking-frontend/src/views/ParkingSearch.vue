@@ -14,6 +14,7 @@ import {
   NSpin,
   NEmpty,
   useMessage,
+  useDialog,
 } from 'naive-ui'
 import type { FormInst } from 'naive-ui'
 import { SearchOutline } from '@vicons/ionicons5'
@@ -56,6 +57,7 @@ interface VehicleItem {
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
+const dialog = useDialog()
 const userStore = useUserStore()
 
 /* ---------- State ---------- */
@@ -243,16 +245,34 @@ async function handleSubmitReservation() {
     return
   }
 
+  // 二次确认
+  const vehicle = vehicles.value.find((v) => v.id === reserveForm.vehicleId)
+  const costStr = estimatedCost.value > 0 ? `¥${estimatedCost.value.toFixed(2)}` : '待计算'
+  dialog.warning({
+    title: '确认预约信息',
+    content: () =>
+      `车位：${selectedSpace.value!.spaceNumber}\n` +
+      `车辆：${vehicle?.plateNumber || ''}\n` +
+      `时间：${dayjs(reserveForm.startTime).format('MM-DD HH:mm')} ~ ${dayjs(reserveForm.endTime).format('MM-DD HH:mm')}\n` +
+      `预估费用：${costStr}`,
+    positiveText: '确认预约',
+    negativeText: '再想想',
+    onPositiveClick: doReserve,
+  })
+}
+
+async function doReserve() {
   reserveLoading.value = true
   try {
     await createReservation({
-      vehicleId: reserveForm.vehicleId,
-      spaceId: selectedSpace.value.id,
+      vehicleId: reserveForm.vehicleId!,
+      spaceId: selectedSpace.value!.id,
       startTime: dayjs(reserveForm.startTime).format('YYYY-MM-DD HH:mm:ss'),
       endTime: dayjs(reserveForm.endTime).format('YYYY-MM-DD HH:mm:ss'),
     })
     message.success('预约成功！')
     showReservationModal.value = false
+    loadAreas()
     loadSpaces()
   } catch {
     /* handled by interceptor */
@@ -323,7 +343,7 @@ onMounted(() => {
               <span class="area-total">/ {{ area.totalSpaces }} 车位</span>
             </div>
             <div class="area-card-floor">
-              {{ area.floorNumber ? `F${area.floorNumber}` : '' }}
+              {{ area.floorNumber || '' }}
             </div>
           </n-card>
         </div>

@@ -28,6 +28,10 @@ public class EntryExitLog {
 
     private Long orderId;
 
+    /** 订单号（非持久化） */
+    @TableField(exist = false)
+    private String orderNo;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

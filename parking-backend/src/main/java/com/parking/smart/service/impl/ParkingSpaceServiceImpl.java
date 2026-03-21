@@ -40,7 +40,20 @@ public class ParkingSpaceServiceImpl extends ServiceImpl<ParkingSpaceMapper, Par
         }
 
         wrapper.orderByAsc(ParkingSpace::getSpaceNumber);
-        return list(wrapper);
+        List<ParkingSpace> spaces = list(wrapper);
+        // 填充区域名称
+        fillAreaName(spaces);
+        return spaces;
+    }
+
+    private void fillAreaName(List<ParkingSpace> spaces) {
+        if (spaces == null || spaces.isEmpty()) return;
+        java.util.Set<Long> areaIds = spaces.stream().map(ParkingSpace::getAreaId)
+                .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        if (areaIds.isEmpty()) return;
+        java.util.Map<Long, String> nameMap = new java.util.HashMap<>();
+        parkingAreaService.listByIds(areaIds).forEach(a -> nameMap.put(a.getId(), a.getName()));
+        spaces.forEach(s -> s.setAreaName(nameMap.get(s.getAreaId())));
     }
 
     @Override

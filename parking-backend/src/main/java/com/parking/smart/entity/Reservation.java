@@ -40,6 +40,22 @@ public class Reservation {
      */
     private BigDecimal amount;
 
+    /** 用户名（非持久化） */
+    @TableField(exist = false)
+    private String userName;
+
+    /** 车牌号（非持久化） */
+    @TableField(exist = false)
+    private String plateNumber;
+
+    /** 车位号（非持久化） */
+    @TableField(exist = false)
+    private String spaceNumber;
+
+    /** 区域名称（非持久化） */
+    @TableField(exist = false)
+    private String areaName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

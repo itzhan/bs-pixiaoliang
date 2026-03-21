@@ -10,6 +10,7 @@ import com.parking.smart.common.BusinessException;
 import com.parking.smart.common.PageResult;
 import com.parking.smart.dto.ReservationRequest;
 import com.parking.smart.entity.Message;
+import com.parking.smart.entity.ParkingArea;
 import com.parking.smart.entity.ParkingSpace;
 import com.parking.smart.entity.Reservation;
 import com.parking.smart.entity.Vehicle;
@@ -97,6 +98,13 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         space.setStatus(2);
         parkingSpaceMapper.updateById(space);
 
+        // 同步更新区域可用车位数
+        ParkingArea area = parkingAreaMapper.selectById(space.getAreaId());
+        if (area != null && area.getAvailableSpaces() != null && area.getAvailableSpaces() > 0) {
+            area.setAvailableSpaces(area.getAvailableSpaces() - 1);
+            parkingAreaMapper.updateById(area);
+        }
+
         // 创建消息通知
         Message message = new Message();
         message.setUserId(userId);
@@ -139,6 +147,13 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         if (space != null) {
             space.setStatus(0);
             parkingSpaceMapper.updateById(space);
+
+            // 同步更新区域可用车位数
+            ParkingArea area = parkingAreaMapper.selectById(space.getAreaId());
+            if (area != null) {
+                area.setAvailableSpaces((area.getAvailableSpaces() != null ? area.getAvailableSpaces() : 0) + 1);
+                parkingAreaMapper.updateById(area);
+            }
         }
 
         log.info("预约 {} 已取消，原因：{}", reservation.getReservationNo(), reason);
@@ -160,6 +175,12 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         return PageResult.from(iPage);
     }
 
+    @Autowired
+    private com.parking.smart.mapper.UserMapper userMapper;
+
+    @Autowired
+    private com.parking.smart.mapper.ParkingAreaMapper parkingAreaMapper;
+
     @Override
     public PageResult<Reservation> getAllReservations(Integer page, Integer size, Integer status, String keyword) {
         LambdaQueryWrapper<Reservation> wrapper = new LambdaQueryWrapper<Reservation>()
@@ -168,7 +189,45 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
                 .orderByDesc(Reservation::getCreatedAt);
 
         IPage<Reservation> iPage = baseMapper.selectPage(new Page<>(page, size), wrapper);
+        fillReservationNames(iPage.getRecords());
         return PageResult.from(iPage);
+    }
+
+    private void fillReservationNames(java.util.List<Reservation> list) {
+        if (list == null || list.isEmpty()) return;
+        // 用户名
+        java.util.Set<Long> userIds = list.stream().map(Reservation::getUserId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> userNameMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            userMapper.selectBatchIds(userIds).forEach(u -> userNameMap.put(u.getId(), u.getRealName() != null ? u.getRealName() : u.getUsername()));
+        }
+        // 车辆车牌
+        java.util.Set<Long> vehicleIds = list.stream().map(Reservation::getVehicleId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, String> plateMap = new java.util.HashMap<>();
+        if (!vehicleIds.isEmpty()) {
+            vehicleMapper.selectBatchIds(vehicleIds).forEach(v -> plateMap.put(v.getId(), v.getPlateNumber()));
+        }
+        // 车位号及区域
+        java.util.Set<Long> spaceIds = list.stream().map(Reservation::getSpaceId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Long, ParkingSpace> spaceMap = new java.util.HashMap<>();
+        java.util.Map<Long, String> areaNameMap = new java.util.HashMap<>();
+        if (!spaceIds.isEmpty()) {
+            java.util.List<ParkingSpace> spaces = parkingSpaceMapper.selectBatchIds(spaceIds);
+            spaces.forEach(s -> spaceMap.put(s.getId(), s));
+            java.util.Set<Long> areaIds = spaces.stream().map(ParkingSpace::getAreaId).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
+            if (!areaIds.isEmpty()) {
+                parkingAreaMapper.selectBatchIds(areaIds).forEach(a -> areaNameMap.put(a.getId(), a.getName()));
+            }
+        }
+        for (Reservation r : list) {
+            r.setUserName(userNameMap.get(r.getUserId()));
+            r.setPlateNumber(plateMap.get(r.getVehicleId()));
+            ParkingSpace space = spaceMap.get(r.getSpaceId());
+            if (space != null) {
+                r.setSpaceNumber(space.getSpaceNumber());
+                r.setAreaName(areaNameMap.get(space.getAreaId()));
+            }
+        }
     }
 
     @Override

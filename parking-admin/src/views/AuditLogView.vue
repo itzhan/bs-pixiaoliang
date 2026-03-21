@@ -39,8 +39,6 @@ const dataSource = ref<any[]>([])
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 })
 
 const columns = [
-  { title: 'ID', dataIndex: 'id', width: 70 },
-  { title: '用户ID', dataIndex: 'userId', width: 90 },
   { title: '用户名', dataIndex: 'username', width: 120 },
   { title: '模块', dataIndex: 'module', width: 100 },
   { title: '操作', dataIndex: 'action', width: 100 },

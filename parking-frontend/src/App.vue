@@ -8,6 +8,7 @@ import {
   NAvatar,
   NDropdown,
   NMessageProvider,
+  NDialogProvider,
 } from 'naive-ui'
 import { CarSportOutline, PersonOutline } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
@@ -62,6 +63,7 @@ function navigateTo(path: string) {
 <template>
   <n-config-provider :theme-overrides="themeOverrides">
     <n-message-provider>
+    <n-dialog-provider>
       <div class="app-wrapper">
         <header v-if="showNav" class="app-header">
           <div class="header-inner">
@@ -116,6 +118,7 @@ function navigateTo(path: string) {
           <router-view />
         </main>
       </div>
+    </n-dialog-provider>
     </n-message-provider>
   </n-config-provider>
 </template>
