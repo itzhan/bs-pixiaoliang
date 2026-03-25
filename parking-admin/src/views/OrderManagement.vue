@@ -87,6 +87,14 @@
             >
               <a-button type="link" size="small" danger>标记异常</a-button>
             </a-popconfirm>
+            <a-popconfirm
+              title="确定删除该订单？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDeleteOrder(record.id)"
+            >
+              <a-button type="link" size="small" danger>删除</a-button>
+            </a-popconfirm>
           </a-space>
         </template>
       </template>
@@ -102,13 +110,35 @@
     >
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="车牌号" required>
-          <a-input v-model:value="entryForm.plateNumber" placeholder="请输入车牌号" />
+          <a-input
+            v-model:value="entryForm.plateNumber"
+            placeholder="请输入车牌号"
+            @change="searchReservations"
+          />
+        </a-form-item>
+        <a-form-item label="关联预约" v-if="plateReservations.length > 0">
+          <a-select
+            v-model:value="entryForm.reservationId"
+            placeholder="请选择预约订单"
+            :loading="reservationLoading"
+            allow-clear
+            style="width: 100%"
+            @change="onSelectReservation"
+          >
+            <a-select-option v-for="r in plateReservations" :key="r.id" :value="r.id">
+              {{ r.reservationNo }} | {{ r.spaceNumber || r.spaceId }} | {{ r.startTime?.substring(0,16) }} ~ {{ r.endTime?.substring(0,16) }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item v-if="plateReservations.length > 0 && !entryForm.reservationId">
+          <a-alert message="检测到该车牌有待使用的预约，请选择关联预约或手动选择车位" type="info" show-icon />
         </a-form-item>
         <a-form-item label="选择车位" required>
           <a-select
             v-model:value="entryForm.spaceId"
             placeholder="请选择空闲车位"
             show-search
+            :disabled="!!entryForm.reservationId"
             :filter-option="filterSpaceOption"
             style="width: 100%"
           >
@@ -116,6 +146,7 @@
               {{ s.spaceNumber }}（{{ s.areaName || '未知区域' }}）
             </a-select-option>
           </a-select>
+          <span v-if="entryForm.reservationId" style="color: #52c41a; font-size: 12px; margin-top: 4px; display: block;">已从预约自动绑定车位</span>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -168,8 +199,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { getAllOrders, vehicleEntry, vehicleExit, markAbnormal } from '@/api/order'
+import { getAllOrders, vehicleEntry, vehicleExit, markAbnormal, deleteOrder } from '@/api/order'
 import { getAvailableSpaces } from '@/api/parkingSpace'
+import { getReservationsByPlate } from '@/api/reservation'
 
 /* ---------- Status Maps ---------- */
 const orderStatusMap: Record<number, { label: string; color: string }> = {
@@ -195,7 +227,7 @@ const columns = [
   { title: '金额(¥)', dataIndex: 'amount', width: 100 },
   { title: '状态', dataIndex: 'status', width: 90 },
   { title: '支付状态', dataIndex: 'paymentStatus', width: 100 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
 ]
 
 /* ---------- State ---------- */
@@ -217,8 +249,10 @@ const pagination = reactive({
 /* Entry modal */
 const entryModalVisible = ref(false)
 const entryLoading = ref(false)
-const entryForm = reactive({ plateNumber: '', spaceId: undefined as number | undefined })
+const entryForm = reactive({ plateNumber: '', spaceId: undefined as number | undefined, reservationId: undefined as number | undefined })
 const availableSpaces = ref<any[]>([])
+const plateReservations = ref<any[]>([])
+const reservationLoading = ref(false)
 
 function filterSpaceOption(input: string, option: any) {
   return option.children?.[0]?.children?.toLowerCase?.()?.includes?.(input.toLowerCase()) ?? false
@@ -229,6 +263,30 @@ async function loadAvailableSpaces() {
     const res: any = await getAvailableSpaces()
     availableSpaces.value = res.data || []
   } catch { /* ignore */ }
+}
+
+async function searchReservations() {
+  if (!entryForm.plateNumber || entryForm.plateNumber.length < 2) {
+    plateReservations.value = []
+    return
+  }
+  reservationLoading.value = true
+  try {
+    const res: any = await getReservationsByPlate(entryForm.plateNumber)
+    plateReservations.value = res.data || []
+  } catch {
+    plateReservations.value = []
+  } finally {
+    reservationLoading.value = false
+  }
+}
+
+function onSelectReservation(reservationId: number) {
+  const rsv = plateReservations.value.find((r: any) => r.id === reservationId)
+  if (rsv) {
+    entryForm.spaceId = rsv.spaceId
+    entryForm.reservationId = rsv.id
+  }
 }
 
 /* Exit modal */
@@ -254,10 +312,10 @@ const fetchData = async () => {
       page: pagination.current,
       size: pagination.pageSize,
     }
-    if (searchParams.status !== undefined && searchParams.status !== '') {
+    if (searchParams.status !== undefined) {
       params.status = searchParams.status
     }
-    if (searchParams.paymentStatus !== undefined && searchParams.paymentStatus !== '') {
+    if (searchParams.paymentStatus !== undefined) {
       params.paymentStatus = searchParams.paymentStatus
     }
     if (searchParams.keyword) {
@@ -297,6 +355,8 @@ const handleTableChange = (pag: any) => {
 const openEntryModal = () => {
   entryForm.plateNumber = ''
   entryForm.spaceId = undefined
+  entryForm.reservationId = undefined
+  plateReservations.value = []
   loadAvailableSpaces()
   entryModalVisible.value = true
 }
@@ -362,6 +422,17 @@ const handleMarkAbnormal = async (id: number) => {
 const viewDetail = (record: any) => {
   currentRecord.value = record
   detailVisible.value = true
+}
+
+/* ---------- Delete ---------- */
+const handleDeleteOrder = async (id: number) => {
+  try {
+    await deleteOrder(id)
+    message.success('删除成功')
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '删除失败')
+  }
 }
 
 /* ---------- Init ---------- */

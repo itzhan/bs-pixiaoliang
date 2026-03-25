@@ -39,7 +39,6 @@ const userMenuOptions = [
   { label: '我的订单', key: 'orders' },
   { label: '我的预约', key: 'reservations' },
   { label: '我的车辆', key: 'vehicles' },
-  { label: '我的支付', key: 'payments' },
   { label: '我的评价', key: 'reviews' },
   { label: '我的消息', key: 'messages' },
   { type: 'divider', key: 'd1' },

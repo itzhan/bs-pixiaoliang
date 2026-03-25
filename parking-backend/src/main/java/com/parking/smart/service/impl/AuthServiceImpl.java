@@ -33,9 +33,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
+        // 去除用户名前后空格
+        String username = request.getUsername().trim();
+
         // 根据用户名查找用户
         User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
+                new LambdaQueryWrapper<User>().eq(User::getUsername, username)
         );
         if (user == null) {
             throw new BusinessException("用户名或密码错误");

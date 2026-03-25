@@ -8,8 +8,13 @@ import com.parking.smart.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 预约控制器
@@ -44,14 +49,37 @@ public class ReservationController {
     }
 
     /**
+     * 查询某车位某日已被预约的时间段
+     */
+    @GetMapping("/available-slots")
+    public Result<List<Map<String, String>>> getAvailableSlots(
+            @RequestParam Long spaceId,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        log.info("查询可用时段: spaceId={}, date={}", spaceId, date);
+        List<Map<String, String>> bookedSlots = reservationService.getBookedSlots(spaceId, date);
+        return Result.success(bookedSlots);
+    }
+
+    /**
+     * 支付预约
+     */
+    @PutMapping("/{id}/pay")
+    public Result<Void> payReservation(@PathVariable Long id) {
+        log.info("支付预约: id={}", id);
+        reservationService.payReservation(id);
+        return Result.success();
+    }
+
+    /**
      * 查询我的预约
      */
     @GetMapping("/my")
     public Result<PageResult<Reservation>> getMyReservations(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) Integer status) {
-        PageResult<Reservation> result = reservationService.getMyReservations(page, size, status);
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer paymentStatus) {
+        PageResult<Reservation> result = reservationService.getMyReservations(page, size, status, paymentStatus);
         return Result.success(result);
     }
 
@@ -70,11 +98,42 @@ public class ReservationController {
     }
 
     /**
-     * 根据ID查询预约
+     * 根据车牌号查询待使用的预约（管理员 - 入场时使用）
      */
+    @GetMapping("/by-plate")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
+    public Result<List<Reservation>> getReservationsByPlate(@RequestParam String plateNumber) {
+        List<Reservation> list = reservationService.getActiveReservationsByPlate(plateNumber);
+        return Result.success(list);
+    }
+
     @GetMapping("/{id}")
     public Result<Reservation> getReservationById(@PathVariable Long id) {
         Reservation reservation = reservationService.getReservationById(id);
         return Result.success(reservation);
     }
+
+    /**
+     * 管理员更新预约状态
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> updateReservationStatus(@PathVariable Long id,
+                                                 @RequestParam Integer status) {
+        log.info("管理员更新预约状态: id={}, status={}", id, status);
+        reservationService.updateReservationStatus(id, status);
+        return Result.success();
+    }
+
+    /**
+     * 管理员删除预约
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteReservation(@PathVariable Long id) {
+        log.info("管理员删除预约: id={}", id);
+        reservationService.deleteReservation(id);
+        return Result.success();
+    }
 }
+

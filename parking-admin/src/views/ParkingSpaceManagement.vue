@@ -4,7 +4,6 @@ import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { getSpaces, createSpace, updateSpace, updateSpaceStatus, deleteSpace } from '@/api/parkingSpace'
 import { getAllAreas } from '@/api/parkingArea'
-import dayjs from 'dayjs'
 
 /* ---------- Types ---------- */
 interface AreaOption {
@@ -107,7 +106,7 @@ async function fetchData() {
       size: pagination.pageSize,
       areaId: searchParams.areaId || undefined,
       spaceType: searchParams.spaceType || undefined,
-      status: searchParams.status !== undefined ? String(searchParams.status) : undefined,
+      status: searchParams.status,
     })
     dataSource.value = res.data.records
     pagination.total = res.data.total

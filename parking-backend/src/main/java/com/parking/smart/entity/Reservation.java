@@ -40,6 +40,11 @@ public class Reservation {
      */
     private BigDecimal amount;
 
+    /**
+     * 支付状态：0-待支付，1-已支付
+     */
+    private Integer paymentStatus = 0;
+
     /** 用户名（非持久化） */
     @TableField(exist = false)
     private String userName;

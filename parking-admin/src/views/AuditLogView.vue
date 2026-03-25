@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
-import { getLogs } from '@/api/auditLog'
+import { getLogs, deleteLog } from '@/api/auditLog'
 
 /* ---------- Options ---------- */
 const moduleOptions = [
@@ -45,6 +46,7 @@ const columns = [
   { title: '详情', dataIndex: 'detail', ellipsis: true },
   { title: 'IP地址', dataIndex: 'ipAddress', width: 140 },
   { title: '记录时间', dataIndex: 'createTime', width: 180 },
+  { title: '操作', key: 'action', width: 100, fixed: 'right' as const },
 ]
 
 async function fetchData() {
@@ -89,6 +91,17 @@ function formatDate(val: string) {
 }
 
 onMounted(fetchData)
+
+/* ---------- Delete ---------- */
+async function handleDeleteLog(id: number) {
+  try {
+    await deleteLog(id)
+    message.success('删除成功')
+    fetchData()
+  } catch {
+    message.error('删除失败')
+  }
+}
 </script>
 
 <template>
@@ -150,6 +163,17 @@ onMounted(fetchData)
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'createTime'">
           {{ formatDate(record.createTime) }}
+        </template>
+
+        <template v-else-if="column.key === 'action'">
+          <a-popconfirm
+            title="确定删除该日志？"
+            ok-text="确定"
+            cancel-text="取消"
+            @confirm="handleDeleteLog(record.id)"
+          >
+            <a-button type="link" size="small" danger>删除</a-button>
+          </a-popconfirm>
         </template>
       </template>
     </a-table>

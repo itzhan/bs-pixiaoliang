@@ -178,7 +178,6 @@ const quickNavItems = [
   { label: '我的订单', path: '/orders', icon: ReceiptOutline, color: '#2D6A4F', bg: 'rgba(45,106,79,0.08)' },
   { label: '我的预约', path: '/reservations', icon: CalendarOutline, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
   { label: '我的车辆', path: '/vehicles', icon: CarOutline, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
-  { label: '我的支付', path: '/payments', icon: CardOutline, color: '#E07A5F', bg: 'rgba(224,122,95,0.08)' },
   { label: '我的评价', path: '/reviews', icon: StarOutline, color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)' },
   { label: '我的消息', path: '/messages', icon: ChatboxEllipsesOutline, color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
 ]
@@ -456,7 +455,7 @@ onMounted(async () => {
 
 .quick-nav {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
 

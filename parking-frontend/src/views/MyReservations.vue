@@ -17,7 +17,7 @@
 
     <div class="page-container">
       <!-- ===== Status Filter ===== -->
-      <n-tabs v-model:value="currentStatus" type="line" @update:value="handleStatusChange">
+      <n-tabs v-model:value="currentTab" type="line" @update:value="handleTabChange">
         <n-tab v-for="tab in statusTabs" :key="tab.value" :name="tab.value">
           {{ tab.label }}
         </n-tab>
@@ -38,15 +38,15 @@
           :key="item.id"
           class="reservation-card"
         >
-          <div class="card-color-bar" :style="{ background: getStatusColor(item.status) }" />
+          <div class="card-color-bar" :style="{ background: getCardColor(item) }" />
           <div class="card-inner">
             <div class="card-header">
               <span class="order-no">
                 <n-icon :size="14" style="margin-right: 4px; vertical-align: -2px;"><DocumentTextOutline /></n-icon>
                 {{ item.reservationNo || item.id }}
               </span>
-              <n-tag :type="statusTagType(item.status)" size="small" round>
-                {{ statusLabel(item.status) }}
+              <n-tag :type="getCardTagType(item)" size="small" round>
+                {{ getCardTagLabel(item) }}
               </n-tag>
             </div>
 
@@ -68,8 +68,19 @@
               </div>
             </div>
 
-            <div class="card-footer" v-if="canCancel(item.status)">
+            <div class="card-footer" v-if="canCancel(item.status) || canPay(item.paymentStatus)">
               <n-button
+                v-if="canPay(item.paymentStatus)"
+                type="primary"
+                size="small"
+                round
+                :loading="payingId === item.id"
+                @click="openPayModal(item)"
+              >
+                立即支付
+              </n-button>
+              <n-button
+                v-if="canCancel(item.status)"
                 type="error"
                 size="small"
                 ghost
@@ -102,6 +113,34 @@
           :rows="3"
         />
       </n-modal>
+
+      <!-- Pay Confirm Modal -->
+      <n-modal v-model:show="payModalVisible" preset="card" title="确认支付" style="max-width: 420px">
+        <div v-if="payTarget" class="pay-confirm-card">
+          <div class="pay-confirm-row">
+            <span class="pay-confirm-label">预约编号</span>
+            <span class="pay-confirm-value">{{ payTarget.reservationNo || payTarget.id }}</span>
+          </div>
+          <div class="pay-confirm-row">
+            <span class="pay-confirm-label">车位信息</span>
+            <span class="pay-confirm-value">{{ payTarget.areaName || '—' }} · {{ payTarget.spaceName || payTarget.spaceCode || '—' }}</span>
+          </div>
+          <div class="pay-confirm-row">
+            <span class="pay-confirm-label">预约时间</span>
+            <span class="pay-confirm-value">{{ formatTime(payTarget.startTime) }} ~ {{ formatTime(payTarget.endTime) }}</span>
+          </div>
+          <div class="pay-confirm-row pay-amount-row">
+            <span class="pay-confirm-label">支付金额</span>
+            <span class="pay-confirm-value pay-confirm-price">¥{{ (payTarget.amount ?? 0).toFixed(2) }}</span>
+          </div>
+        </div>
+        <template #action>
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <n-button @click="payModalVisible = false">取消</n-button>
+            <n-button type="primary" :loading="payingId === payTarget?.id" @click="confirmPay">确认支付</n-button>
+          </div>
+        </template>
+      </n-modal>
     </div>
   </div>
 </template>
@@ -110,7 +149,7 @@
 import { ref, onMounted } from 'vue'
 import { useMessage, NIcon } from 'naive-ui'
 import dayjs from 'dayjs'
-import { getMyReservations, cancelReservation } from '@/api/reservation'
+import { getMyReservations, cancelReservation, payReservation } from '@/api/reservation'
 import {
   CalendarOutline,
   LocationOutline,
@@ -120,57 +159,66 @@ import {
 
 const message = useMessage()
 
-// --- Status Config ---
+// --- Tab Config (全部 / 待支付 / 已支付 / 已取消) ---
 const statusTabs = [
   { label: '全部', value: '' },
-  { label: '待确认', value: '0' },
-  { label: '已确认', value: '1' },
-  { label: '已取消', value: '2' },
-  { label: '已过期', value: '3' },
-  { label: '已完成', value: '4' },
+  { label: '待支付', value: 'pay:0' },
+  { label: '已支付', value: 'pay:1' },
+  { label: '已取消', value: 'status:2' },
 ]
 
-const statusMap: Record<number, string> = {
-  0: '待确认',
-  1: '已确认',
-  2: '已取消',
-  3: '已过期',
-  4: '已完成',
+// --- Payment Status ---
+const payStatusMap: Record<number, string> = {
+  0: '待支付',
+  1: '已支付',
 }
 
-const statusTagMap: Record<number, 'warning' | 'success' | 'default' | 'info' | 'error'> = {
+const payStatusTagMap: Record<number, 'warning' | 'success' | 'default'> = {
   0: 'warning',
   1: 'success',
-  2: 'default',
-  3: 'error',
-  4: 'info',
 }
 
-function statusLabel(status: number) {
-  return statusMap[status] ?? '未知'
+function payStatusLabel(paymentStatus: number) {
+  return payStatusMap[paymentStatus] ?? '未知'
 }
 
-function statusTagType(status: number) {
-  return statusTagMap[status] ?? 'default'
+function payStatusTagType(paymentStatus: number) {
+  return payStatusTagMap[paymentStatus] ?? 'default'
 }
 
 function canCancel(status: number) {
-  return status === 0 || status === 1
+  return status === 0 // 待使用
+}
+
+function canPay(paymentStatus: number) {
+  return paymentStatus === 0 // 待支付
 }
 
 function formatTime(t: string) {
   return t ? dayjs(t).format('YYYY-MM-DD HH:mm') : '—'
 }
 
-function getStatusColor(status: number): string {
+function getPayStatusColor(paymentStatus: number): string {
   const map: Record<number, string> = {
     0: '#F59E0B',
     1: '#2D6A4F',
-    2: '#94A3B8',
-    3: '#EF4444',
-    4: '#3B82F6',
   }
-  return map[status] ?? '#94A3B8'
+  return map[paymentStatus] ?? '#94A3B8'
+}
+
+function getCardColor(item: any): string {
+  if (item.status === 2) return '#94A3B8'
+  return getPayStatusColor(item.paymentStatus)
+}
+
+function getCardTagType(item: any) {
+  if (item.status === 2) return 'default'
+  return payStatusTagType(item.paymentStatus)
+}
+
+function getCardTagLabel(item: any) {
+  if (item.status === 2) return '已取消'
+  return payStatusLabel(item.paymentStatus)
 }
 
 // --- Data ---
@@ -179,14 +227,17 @@ const reservations = ref<any[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 10
-const currentStatus = ref('')
+const currentTab = ref('')
+const payingId = ref<number | null>(null)
 
 async function fetchList() {
   loading.value = true
   try {
     const params: any = { page: currentPage.value, size: pageSize }
-    if (currentStatus.value !== '') {
-      params.status = currentStatus.value
+    if (currentTab.value.startsWith('pay:')) {
+      params.paymentStatus = currentTab.value.split(':')[1]
+    } else if (currentTab.value.startsWith('status:')) {
+      params.status = currentTab.value.split(':')[1]
     }
     const res: any = await getMyReservations(params)
     reservations.value = res.data?.records ?? []
@@ -198,9 +249,33 @@ async function fetchList() {
   }
 }
 
-function handleStatusChange() {
+function handleTabChange() {
   currentPage.value = 1
   fetchList()
+}
+
+// --- Pay ---
+const payModalVisible = ref(false)
+const payTarget = ref<any>(null)
+
+function openPayModal(item: any) {
+  payTarget.value = item
+  payModalVisible.value = true
+}
+
+async function confirmPay() {
+  if (!payTarget.value) return
+  payingId.value = payTarget.value.id
+  try {
+    await payReservation(payTarget.value.id)
+    message.success('支付成功')
+    payModalVisible.value = false
+    fetchList()
+  } catch (e: any) {
+    message.error(e.message || '支付失败')
+  } finally {
+    payingId.value = null
+  }
 }
 
 // --- Cancel ---
@@ -381,9 +456,50 @@ onMounted(() => {
 .card-footer {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--border-color);
+}
+
+/* ===== Pay Confirm Modal ===== */
+.pay-confirm-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pay-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pay-confirm-label {
+  font-size: 14px;
+  color: #94a3b8;
+  min-width: 64px;
+}
+
+.pay-confirm-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  text-align: right;
+}
+
+.pay-amount-row {
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.pay-confirm-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e07a5f;
 }
 
 /* ===== Responsive ===== */

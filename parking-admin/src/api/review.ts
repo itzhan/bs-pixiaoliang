@@ -11,3 +11,7 @@ export function replyReview(id: number, data: any) {
 export function updateReviewStatus(id: number, status: number) {
   return request.put(`/reviews/${id}/status`, null, { params: { status } })
 }
+
+export function deleteReview(id: number) {
+  return request.delete(`/reviews/${id}`)
+}

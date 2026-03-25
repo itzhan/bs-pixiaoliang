@@ -144,7 +144,7 @@ const fetchData = async () => {
       page: pagination.current,
       size: pagination.pageSize,
     }
-    if (searchParams.status !== undefined && searchParams.status !== '') {
+    if (searchParams.status !== undefined) {
       params.status = searchParams.status
     }
     if (searchParams.keyword) {

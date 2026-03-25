@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
-import { getUsers, updateUser, deleteUser } from '@/api/user'
+import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { getUsers, createUser, updateUser, deleteUser } from '@/api/user'
 import dayjs from 'dayjs'
 
 /* ---------- Types ---------- */
@@ -138,6 +138,44 @@ async function handleEditSubmit() {
   }
 }
 
+/* ---------- Create ---------- */
+const createVisible = ref(false)
+const createLoading = ref(false)
+const createForm = reactive({
+  username: '',
+  password: '',
+  realName: '',
+  phone: '',
+  email: '',
+  role: 'USER',
+})
+
+function openCreate() {
+  createForm.username = ''
+  createForm.password = ''
+  createForm.realName = ''
+  createForm.phone = ''
+  createForm.email = ''
+  createForm.role = 'USER'
+  createVisible.value = true
+}
+
+async function handleCreateSubmit() {
+  if (!createForm.username) { message.warning('请输入用户名'); return }
+  if (!createForm.password) { message.warning('请输入密码'); return }
+  createLoading.value = true
+  try {
+    await createUser({ ...createForm })
+    message.success('创建成功')
+    createVisible.value = false
+    fetchData()
+  } catch {
+    message.error('创建失败')
+  } finally {
+    createLoading.value = false
+  }
+}
+
 /* ---------- Delete ---------- */
 async function handleDelete(id: number) {
   try {
@@ -193,6 +231,12 @@ onMounted(() => {
         <a-button @click="handleReset">
           <template #icon><ReloadOutlined /></template>
           重置
+        </a-button>
+      </div>
+      <div class="toolbar-right">
+        <a-button type="primary" @click="openCreate">
+          <template #icon><PlusOutlined /></template>
+          新增用户
         </a-button>
       </div>
     </div>
@@ -266,6 +310,39 @@ onMounted(() => {
             <a-radio :value="1">启用</a-radio>
             <a-radio :value="0">禁用</a-radio>
           </a-radio-group>
+        </a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- Create Modal -->
+    <a-modal
+      v-model:open="createVisible"
+      title="新增用户"
+      :confirm-loading="createLoading"
+      @ok="handleCreateSubmit"
+    >
+      <a-form :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }" style="margin-top: 16px">
+        <a-form-item label="用户名" required>
+          <a-input v-model:value="createForm.username" placeholder="请输入用户名" />
+        </a-form-item>
+        <a-form-item label="密码" required>
+          <a-input-password v-model:value="createForm.password" placeholder="请输入密码" />
+        </a-form-item>
+        <a-form-item label="真实姓名">
+          <a-input v-model:value="createForm.realName" placeholder="请输入真实姓名" />
+        </a-form-item>
+        <a-form-item label="手机号">
+          <a-input v-model:value="createForm.phone" placeholder="请输入手机号" />
+        </a-form-item>
+        <a-form-item label="邮箱">
+          <a-input v-model:value="createForm.email" placeholder="请输入邮箱" />
+        </a-form-item>
+        <a-form-item label="角色">
+          <a-select v-model:value="createForm.role">
+            <a-select-option value="ADMIN">管理员</a-select-option>
+            <a-select-option value="OPERATOR">操作员</a-select-option>
+            <a-select-option value="USER">普通用户</a-select-option>
+          </a-select>
         </a-form-item>
       </a-form>
     </a-modal>

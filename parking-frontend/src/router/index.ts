@@ -50,12 +50,6 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/payments',
-      name: 'MyPayments',
-      component: () => import('@/views/MyPayments.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
       path: '/vehicles',
       name: 'MyVehicles',
       component: () => import('@/views/MyVehicles.vue'),

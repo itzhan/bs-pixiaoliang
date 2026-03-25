@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NButton,
@@ -13,14 +13,14 @@ import {
   NIcon,
   NSpin,
   NEmpty,
+  NSteps,
+  NStep,
   useMessage,
-  useDialog,
 } from 'naive-ui'
-import type { FormInst } from 'naive-ui'
-import { SearchOutline } from '@vicons/ionicons5'
+import { SearchOutline, TimeOutline, CheckmarkCircleOutline } from '@vicons/ionicons5'
 import { getAllAreas, getAvailableSpaces } from '@/api/parking'
 import { getMyVehicles } from '@/api/vehicle'
-import { createReservation } from '@/api/reservation'
+import { createReservation, getBookedSlots } from '@/api/reservation'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
 
@@ -53,11 +53,18 @@ interface VehicleItem {
   color: string
 }
 
+interface TimeSlot {
+  startHour: number
+  label: string
+  startTime: string
+  endTime: string
+  booked: boolean
+}
+
 /* ---------- Composables ---------- */
 const router = useRouter()
 const route = useRoute()
 const message = useMessage()
-const dialog = useDialog()
 const userStore = useUserStore()
 
 /* ---------- State ---------- */
@@ -68,20 +75,25 @@ const vehicles = ref<VehicleItem[]>([])
 const areasLoading = ref(false)
 const spacesLoading = ref(false)
 const reserveLoading = ref(false)
+const slotsLoading = ref(false)
 
 // Filter
 const selectedAreaId = ref<number | null>(null)
 const selectedSpaceType = ref<string | null>(null)
 
-// Reservation modal
+// Reservation modal — multi-step
 const showReservationModal = ref(false)
 const selectedSpace = ref<ParkingSpaceItem | null>(null)
-const reserveFormRef = ref<FormInst | null>(null)
+const currentStep = ref(0) // 0: 选日期&车辆, 1: 选时间段, 2: 确认&支付
+
 const reserveForm = reactive({
   vehicleId: null as number | null,
-  startTime: null as number | null,
-  endTime: null as number | null,
+  selectedDate: null as number | null, // timestamp from NDatePicker
 })
+
+// Time slots
+const timeSlots = ref<TimeSlot[]>([])
+const selectedSlotIndices = ref<number[]>([])
 
 /* ---------- Computed ---------- */
 const areaOptions = computed(() =>
@@ -102,11 +114,31 @@ const vehicleOptions = computed(() =>
   })),
 )
 
+// 已选时间段的起止
+const selectedTimeRange = computed(() => {
+  if (selectedSlotIndices.value.length === 0) return null
+  const sorted = [...selectedSlotIndices.value].sort((a, b) => a - b)
+  const first = timeSlots.value[sorted[0]]
+  const last = timeSlots.value[sorted[sorted.length - 1]]
+  return { start: first.startTime, end: last.endTime, startLabel: first.label.split('-')[0], endLabel: last.label.split('-')[1] }
+})
+
+// 预估费用
 const estimatedCost = computed(() => {
-  if (!reserveForm.startTime || !reserveForm.endTime || !selectedSpace.value) return 0
-  const hours = (reserveForm.endTime - reserveForm.startTime) / (1000 * 60 * 60)
-  if (hours <= 0) return 0
+  if (!selectedTimeRange.value || !selectedSpace.value) return 0
+  const hours = selectedSlotIndices.value.length
   return Math.round(hours * Number(selectedSpace.value.hourlyRate) * 100) / 100
+})
+
+// 选中的车辆信息
+const selectedVehicle = computed(() => {
+  return vehicles.value.find((v) => v.id === reserveForm.vehicleId)
+})
+
+// 选中日期的格式化
+const selectedDateStr = computed(() => {
+  if (!reserveForm.selectedDate) return ''
+  return dayjs(reserveForm.selectedDate).format('YYYY-MM-DD')
 })
 
 /* ---------- Label maps ---------- */
@@ -127,28 +159,6 @@ const spaceTypeTagType: Record<string, 'default' | 'warning' | 'info' | 'success
 const areaTypeLabel: Record<string, string> = {
   INDOOR: '室内',
   OUTDOOR: '室外',
-}
-
-/* ---------- Validation ---------- */
-const reserveRules = {
-  vehicleId: {
-    required: true,
-    type: 'number' as const,
-    message: '请选择车辆',
-    trigger: 'change',
-  },
-  startTime: {
-    required: true,
-    type: 'number' as const,
-    message: '请选择开始时间',
-    trigger: 'change',
-  },
-  endTime: {
-    required: true,
-    type: 'number' as const,
-    message: '请选择结束时间',
-    trigger: 'change',
-  },
 }
 
 /* ---------- Date restrictions ---------- */
@@ -195,6 +205,83 @@ async function loadMyVehicles() {
   }
 }
 
+/* ---------- Time Slots ---------- */
+async function loadTimeSlots() {
+  if (!selectedSpace.value || !reserveForm.selectedDate) return
+  slotsLoading.value = true
+  try {
+    const dateStr = dayjs(reserveForm.selectedDate).format('YYYY-MM-DD')
+    const res: any = await getBookedSlots(selectedSpace.value.id, dateStr)
+    const bookedRanges: { start: string; end: string }[] = res.data || []
+
+    // 生成全天时间段 (08:00 ~ 22:00, 每小时一个)
+    const slots: TimeSlot[] = []
+    for (let h = 8; h < 22; h++) {
+      const startH = String(h).padStart(2, '0')
+      const endH = String(h + 1).padStart(2, '0')
+      const slotStart = `${startH}:00`
+      const slotEnd = `${endH}:00`
+
+      // 检查是否与已预约时段重叠
+      const isBooked = bookedRanges.some((range) => {
+        return slotStart < range.end && slotEnd > range.start
+      })
+
+      // 过去的时间段也标记为不可用（仅当日）
+      const isToday = dayjs(reserveForm.selectedDate).isSame(dayjs(), 'day')
+      const isPast = isToday && h < dayjs().hour()
+
+      slots.push({
+        startHour: h,
+        label: `${slotStart} - ${slotEnd}`,
+        startTime: `${dateStr} ${slotStart}:00`,
+        endTime: `${dateStr} ${slotEnd}:00`,
+        booked: isBooked || isPast,
+      })
+    }
+    timeSlots.value = slots
+    selectedSlotIndices.value = []
+  } catch {
+    /* handled by interceptor */
+  } finally {
+    slotsLoading.value = false
+  }
+}
+
+function toggleSlot(index: number) {
+  const slot = timeSlots.value[index]
+  if (slot.booked) return
+
+  const idx = selectedSlotIndices.value.indexOf(index)
+  if (idx !== -1) {
+    selectedSlotIndices.value.splice(idx, 1)
+  } else {
+    // 确保连续选择
+    if (selectedSlotIndices.value.length === 0) {
+      selectedSlotIndices.value.push(index)
+    } else {
+      const sorted = [...selectedSlotIndices.value].sort((a, b) => a - b)
+      const min = sorted[0]
+      const max = sorted[sorted.length - 1]
+
+      if (index === min - 1 || index === max + 1) {
+        // 相邻 - 可以添加
+        selectedSlotIndices.value.push(index)
+      } else if (index >= min && index <= max) {
+        // 在范围内，取消后缩小范围
+        selectedSlotIndices.value.splice(idx, 1)
+      } else {
+        // 不相邻，重新选择
+        selectedSlotIndices.value = [index]
+      }
+    }
+  }
+}
+
+function isSlotSelected(index: number) {
+  return selectedSlotIndices.value.includes(index)
+}
+
 /* ---------- Actions ---------- */
 function handleSearch() {
   loadSpaces()
@@ -218,59 +305,53 @@ function handleReserve(space: ParkingSpaceItem) {
   }
   selectedSpace.value = space
   reserveForm.vehicleId = null
-  reserveForm.startTime = null
-  reserveForm.endTime = null
+  reserveForm.selectedDate = null
+  currentStep.value = 0
+  timeSlots.value = []
+  selectedSlotIndices.value = []
   showReservationModal.value = true
   loadMyVehicles()
 }
 
-async function handleSubmitReservation() {
-  try {
-    await reserveFormRef.value?.validate()
-  } catch {
+function goToStep1() {
+  // 验证 Step 0
+  if (!reserveForm.vehicleId) {
+    message.warning('请选择车辆')
     return
   }
-
-  if (
-    !selectedSpace.value ||
-    !reserveForm.startTime ||
-    !reserveForm.endTime ||
-    !reserveForm.vehicleId
-  ) {
+  if (!reserveForm.selectedDate) {
+    message.warning('请选择停车日期')
     return
   }
-
-  if (reserveForm.endTime <= reserveForm.startTime) {
-    message.error('结束时间必须晚于开始时间')
-    return
-  }
-
-  // 二次确认
-  const vehicle = vehicles.value.find((v) => v.id === reserveForm.vehicleId)
-  const costStr = estimatedCost.value > 0 ? `¥${estimatedCost.value.toFixed(2)}` : '待计算'
-  dialog.warning({
-    title: '确认预约信息',
-    content: () =>
-      `车位：${selectedSpace.value!.spaceNumber}\n` +
-      `车辆：${vehicle?.plateNumber || ''}\n` +
-      `时间：${dayjs(reserveForm.startTime).format('MM-DD HH:mm')} ~ ${dayjs(reserveForm.endTime).format('MM-DD HH:mm')}\n` +
-      `预估费用：${costStr}`,
-    positiveText: '确认预约',
-    negativeText: '再想想',
-    onPositiveClick: doReserve,
-  })
+  currentStep.value = 1
+  loadTimeSlots()
 }
 
-async function doReserve() {
+function goToStep2() {
+  if (selectedSlotIndices.value.length === 0) {
+    message.warning('请至少选择一个时间段')
+    return
+  }
+  currentStep.value = 2
+}
+
+function goBack(step: number) {
+  currentStep.value = step
+}
+
+async function handleSubmit(payNow: boolean) {
+  if (!selectedSpace.value || !selectedTimeRange.value || !reserveForm.vehicleId) return
+
   reserveLoading.value = true
   try {
     await createReservation({
-      vehicleId: reserveForm.vehicleId!,
-      spaceId: selectedSpace.value!.id,
-      startTime: dayjs(reserveForm.startTime).format('YYYY-MM-DD HH:mm:ss'),
-      endTime: dayjs(reserveForm.endTime).format('YYYY-MM-DD HH:mm:ss'),
+      vehicleId: reserveForm.vehicleId,
+      spaceId: selectedSpace.value.id,
+      startTime: selectedTimeRange.value.start,
+      endTime: selectedTimeRange.value.end,
+      payNow,
     })
-    message.success('预约成功！')
+    message.success(payNow ? '预约成功，已完成支付！' : '预约成功，请稍后完成支付！')
     showReservationModal.value = false
     loadAreas()
     loadSpaces()
@@ -395,68 +476,132 @@ onMounted(() => {
       </n-spin>
     </div>
 
-    <!-- Reservation Modal -->
+    <!-- ========== Reservation Modal (Multi-Step) ========== -->
     <n-modal
       v-model:show="showReservationModal"
       preset="card"
       title="预约车位"
-      :style="{ width: '480px' }"
+      :style="{ width: '560px' }"
       :mask-closable="false"
     >
+      <!-- Space Info Banner -->
       <div v-if="selectedSpace" class="reserve-space-info">
         <span>
           车位：<strong>{{ selectedSpace.spaceNumber }}</strong>
+          <span style="margin-left: 8px; color: #94a3b8;">{{ getAreaName(selectedSpace.areaId) }}</span>
         </span>
         <span class="reserve-price">¥{{ selectedSpace.hourlyRate }}/小时</span>
       </div>
 
-      <n-form
-        ref="reserveFormRef"
-        :model="reserveForm"
-        :rules="reserveRules"
-        label-placement="left"
-        label-width="80"
-      >
-        <n-form-item label="选择车辆" path="vehicleId">
-          <n-select
-            v-model:value="reserveForm.vehicleId"
-            :options="vehicleOptions"
-            placeholder="请选择车辆"
-          />
-        </n-form-item>
-        <n-form-item label="开始时间" path="startTime">
-          <n-date-picker
-            v-model:value="reserveForm.startTime"
-            type="datetime"
-            placeholder="请选择开始时间"
-            :is-date-disabled="disablePastDate"
-            style="width: 100%"
-          />
-        </n-form-item>
-        <n-form-item label="结束时间" path="endTime">
-          <n-date-picker
-            v-model:value="reserveForm.endTime"
-            type="datetime"
-            placeholder="请选择结束时间"
-            :is-date-disabled="disablePastDate"
-            style="width: 100%"
-          />
-        </n-form-item>
-      </n-form>
+      <!-- Steps indicator -->
+      <n-steps :current="currentStep + 1" size="small" style="margin-bottom: 24px;">
+        <n-step title="选择日期" />
+        <n-step title="选择时段" />
+        <n-step title="确认预约" />
+      </n-steps>
 
-      <div v-if="estimatedCost > 0" class="estimated-cost">
-        预估费用：<span class="cost-value">¥{{ estimatedCost.toFixed(2) }}</span>
+      <!-- ===== Step 0: 选日期 & 车辆 ===== -->
+      <div v-if="currentStep === 0" class="step-content">
+        <n-form label-placement="left" label-width="80">
+          <n-form-item label="选择车辆">
+            <n-select
+              v-model:value="reserveForm.vehicleId"
+              :options="vehicleOptions"
+              placeholder="请选择车辆"
+            />
+          </n-form-item>
+          <n-form-item label="停车日期">
+            <n-date-picker
+              v-model:value="reserveForm.selectedDate"
+              type="date"
+              placeholder="请选择停车日期"
+              :is-date-disabled="disablePastDate"
+              style="width: 100%"
+            />
+          </n-form-item>
+        </n-form>
+        <div class="modal-footer">
+          <n-button @click="showReservationModal = false">取消</n-button>
+          <n-button type="primary" @click="goToStep1">下一步</n-button>
+        </div>
       </div>
 
-      <div class="modal-footer">
-        <n-button @click="showReservationModal = false">取消</n-button>
-        <n-button
-          type="primary"
-          :loading="reserveLoading"
-          @click="handleSubmitReservation"
-        >
-          确认预约
-        </n-button>
+      <!-- ===== Step 1: 选择时间段 ===== -->
+      <div v-if="currentStep === 1" class="step-content">
+        <div class="step-hint">
+          <n-icon :size="16" color="#3B82F6" style="vertical-align: -3px; margin-right: 4px;"><TimeOutline /></n-icon>
+          {{ selectedDateStr }} 可用时间段（点击选择连续时段）
+        </div>
+        <n-spin :show="slotsLoading">
+          <div class="slot-grid">
+            <div
+              v-for="(slot, idx) in timeSlots"
+              :key="idx"
+              :class="['slot-item', { booked: slot.booked, selected: isSlotSelected(idx) }]"
+              @click="toggleSlot(idx)"
+            >
+              <span class="slot-label">{{ slot.label }}</span>
+              <span v-if="slot.booked" class="slot-tag">已预约</span>
+              <n-icon v-if="isSlotSelected(idx)" :size="16" color="#2D6A4F" class="slot-check">
+                <CheckmarkCircleOutline />
+              </n-icon>
+            </div>
+          </div>
+        </n-spin>
+        <div v-if="selectedTimeRange" class="selected-range-info">
+          已选：<strong>{{ selectedTimeRange.startLabel }} - {{ selectedTimeRange.endLabel }}</strong>
+          （共 {{ selectedSlotIndices.length }} 小时，预估 ¥{{ estimatedCost.toFixed(2) }}）
+        </div>
+        <div class="modal-footer">
+          <n-button @click="goBack(0)">上一步</n-button>
+          <n-button type="primary" @click="goToStep2" :disabled="selectedSlotIndices.length === 0">下一步</n-button>
+        </div>
+      </div>
+
+      <!-- ===== Step 2: 确认 & 支付 ===== -->
+      <div v-if="currentStep === 2" class="step-content">
+        <div class="confirm-card">
+          <div class="confirm-row">
+            <span class="confirm-label">车位</span>
+            <span class="confirm-value">{{ selectedSpace?.spaceNumber }} · {{ getAreaName(selectedSpace?.areaId || 0) }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">车辆</span>
+            <span class="confirm-value">{{ selectedVehicle?.plateNumber }} {{ [selectedVehicle?.brand, selectedVehicle?.color].filter(Boolean).join(' ') }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">日期</span>
+            <span class="confirm-value">{{ selectedDateStr }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">时段</span>
+            <span class="confirm-value">{{ selectedTimeRange?.startLabel }} - {{ selectedTimeRange?.endLabel }}（{{ selectedSlotIndices.length }}小时）</span>
+          </div>
+          <div class="confirm-row amount-row">
+            <span class="confirm-label">金额</span>
+            <span class="confirm-value price-text-large">¥{{ estimatedCost.toFixed(2) }}</span>
+          </div>
+        </div>
+        <div class="modal-footer pay-footer">
+          <n-button @click="goBack(1)">上一步</n-button>
+          <div class="pay-buttons">
+            <n-button
+              :loading="reserveLoading"
+              @click="handleSubmit(false)"
+              size="medium"
+            >
+              稍后支付
+            </n-button>
+            <n-button
+              type="primary"
+              :loading="reserveLoading"
+              @click="handleSubmit(true)"
+              size="medium"
+            >
+              立即支付
+            </n-button>
+          </div>
+        </div>
       </div>
     </n-modal>
   </div>
@@ -638,26 +783,146 @@ onMounted(() => {
   color: #e07a5f;
 }
 
-.estimated-cost {
+/* Step content */
+.step-content {
+  min-height: 200px;
+}
+
+.step-hint {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* ===== Time Slot Grid ===== */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.slot-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  user-select: none;
+}
+
+.slot-item:hover:not(.booked) {
+  border-color: #2d6a4f;
+  background: rgba(45, 106, 79, 0.03);
+}
+
+.slot-item.selected {
+  border-color: #2d6a4f;
+  background: rgba(45, 106, 79, 0.08);
+}
+
+.slot-item.booked {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.slot-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.booked .slot-label {
+  color: #94a3b8;
+}
+
+.slot-tag {
+  font-size: 11px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.slot-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.selected-range-info {
   padding: 12px 16px;
   background: #fff7ed;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   color: #1e293b;
   margin-bottom: 16px;
 }
 
-.cost-value {
-  font-size: 20px;
+/* ===== Confirm Card ===== */
+.confirm-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confirm-label {
+  font-size: 14px;
+  color: #94a3b8;
+  min-width: 48px;
+}
+
+.confirm-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  text-align: right;
+}
+
+.amount-row {
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.price-text-large {
+  font-size: 22px;
   font-weight: 700;
   color: #e07a5f;
 }
 
+/* ===== Footer ===== */
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   margin-top: 8px;
+}
+
+.pay-footer {
+  align-items: center;
+}
+
+.pay-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 /* ========== Responsive ========== */
@@ -666,12 +931,20 @@ onMounted(() => {
   .spaces-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .slot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 540px) {
   .area-grid,
   .spaces-grid {
     grid-template-columns: 1fr;
+  }
+
+  .slot-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

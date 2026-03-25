@@ -3,7 +3,6 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { getAreas, createArea, updateArea, deleteArea } from '@/api/parkingArea'
-import dayjs from 'dayjs'
 
 /* ---------- Types ---------- */
 interface AreaRecord {

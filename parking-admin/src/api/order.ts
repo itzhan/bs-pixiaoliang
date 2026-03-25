@@ -19,3 +19,7 @@ export function getOrderById(id: number) {
 export function markAbnormal(id: number) {
   return request.put(`/orders/${id}/abnormal`)
 }
+
+export function deleteOrder(id: number) {
+  return request.delete(`/orders/${id}`)
+}

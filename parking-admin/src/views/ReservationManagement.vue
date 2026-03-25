@@ -7,19 +7,6 @@
     <!-- Search Bar -->
     <div class="table-toolbar">
       <div class="toolbar-left">
-        <a-select
-          v-model:value="searchParams.status"
-          placeholder="预约状态"
-          allow-clear
-          style="width: 140px"
-        >
-          <a-select-option value="">全部</a-select-option>
-          <a-select-option :value="0">待确认</a-select-option>
-          <a-select-option :value="1">已确认</a-select-option>
-          <a-select-option :value="2">已取消</a-select-option>
-          <a-select-option :value="3">已过期</a-select-option>
-          <a-select-option :value="4">已完成</a-select-option>
-        </a-select>
         <a-input
           v-model:value="searchParams.keyword"
           placeholder="搜索预约编号"
@@ -39,13 +26,13 @@
       :loading="loading"
       :pagination="pagination"
       row-key="id"
-      :scroll="{ x: 1200 }"
+      :scroll="{ x: 1400 }"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'status'">
-          <a-tag :color="statusMap[record.status]?.color ?? 'default'">
-            {{ statusMap[record.status]?.label ?? '未知' }}
+        <template v-if="column.dataIndex === 'paymentStatus'">
+          <a-tag :color="paymentStatusMap[record.paymentStatus]?.color ?? 'default'">
+            {{ paymentStatusMap[record.paymentStatus]?.label ?? '未知' }}
           </a-tag>
         </template>
         <template v-if="column.dataIndex === 'amount'">
@@ -60,8 +47,45 @@
         <template v-if="column.dataIndex === 'createdAt'">
           {{ formatDate(record.createdAt) }}
         </template>
+        <template v-if="column.key === 'action'">
+          <a-space>
+            <a-button type="link" size="small" @click="viewDetail(record)">详情</a-button>
+            <a-popconfirm
+              title="确定删除该预约？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDelete(record.id)"
+            >
+              <a-button type="link" size="small" danger>删除</a-button>
+            </a-popconfirm>
+          </a-space>
+        </template>
       </template>
     </a-table>
+
+    <!-- Detail Drawer -->
+    <a-drawer
+      v-model:open="detailVisible"
+      title="预约详情"
+      :width="500"
+    >
+      <a-descriptions :column="1" bordered size="small" v-if="currentRecord">
+        <a-descriptions-item label="预约编号">{{ currentRecord.reservationNo }}</a-descriptions-item>
+        <a-descriptions-item label="用户">{{ currentRecord.userName || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="车牌号">{{ currentRecord.plateNumber || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="车位号">{{ currentRecord.spaceNumber || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="区域">{{ currentRecord.areaName || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="开始时间">{{ formatDate(currentRecord.startTime) }}</a-descriptions-item>
+        <a-descriptions-item label="结束时间">{{ formatDate(currentRecord.endTime) }}</a-descriptions-item>
+        <a-descriptions-item label="金额">¥{{ (currentRecord.amount ?? 0).toFixed(2) }}</a-descriptions-item>
+        <a-descriptions-item label="支付状态">
+          <a-tag :color="paymentStatusMap[currentRecord.paymentStatus]?.color ?? 'default'">
+            {{ paymentStatusMap[currentRecord.paymentStatus]?.label ?? '未知' }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{ formatDate(currentRecord.createdAt) }}</a-descriptions-item>
+      </a-descriptions>
+    </a-drawer>
   </div>
 </template>
 
@@ -69,15 +93,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { getAllReservations } from '@/api/reservation'
+import { getAllReservations, deleteReservation } from '@/api/reservation'
 
-/* ---------- Status Map ---------- */
-const statusMap: Record<number, { label: string; color: string }> = {
-  0: { label: '待确认', color: 'blue' },
-  1: { label: '已确认', color: 'green' },
-  2: { label: '已取消', color: 'red' },
-  3: { label: '已过期', color: 'gray' },
-  4: { label: '已完成', color: 'cyan' },
+/* ---------- Status Maps ---------- */
+const paymentStatusMap: Record<number, { label: string; color: string }> = {
+  0: { label: '待支付', color: 'orange' },
+  1: { label: '已支付', color: 'green' },
 }
 
 /* ---------- Columns ---------- */
@@ -88,16 +109,16 @@ const columns = [
   { title: '车位号', dataIndex: 'spaceNumber', width: 100 },
   { title: '开始时间', dataIndex: 'startTime', width: 170 },
   { title: '结束时间', dataIndex: 'endTime', width: 170 },
-  { title: '状态', dataIndex: 'status', width: 100 },
+  { title: '支付状态', dataIndex: 'paymentStatus', width: 100 },
   { title: '金额', dataIndex: 'amount', width: 100 },
   { title: '创建时间', dataIndex: 'createdAt', width: 170 },
+  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
 ]
 
 /* ---------- State ---------- */
 const loading = ref(false)
 const dataList = ref<any[]>([])
 const searchParams = reactive({
-  status: undefined as number | undefined,
   keyword: '',
 })
 const pagination = reactive({
@@ -107,6 +128,10 @@ const pagination = reactive({
   showSizeChanger: true,
   showTotal: (total: number) => `共 ${total} 条`,
 })
+
+/* Detail drawer */
+const detailVisible = ref(false)
+const currentRecord = ref<any>(null)
 
 /* ---------- Helpers ---------- */
 const formatDate = (val: string | null | undefined) => {
@@ -121,9 +146,6 @@ const fetchData = async () => {
     const params: any = {
       page: pagination.current,
       size: pagination.pageSize,
-    }
-    if (searchParams.status !== undefined && searchParams.status !== '') {
-      params.status = searchParams.status
     }
     if (searchParams.keyword) {
       params.keyword = searchParams.keyword
@@ -145,7 +167,6 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  searchParams.status = undefined
   searchParams.keyword = ''
   pagination.current = 1
   fetchData()
@@ -155,6 +176,23 @@ const handleTableChange = (pag: any) => {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
   fetchData()
+}
+
+/* ---------- Detail ---------- */
+const viewDetail = (record: any) => {
+  currentRecord.value = record
+  detailVisible.value = true
+}
+
+/* ---------- Delete ---------- */
+const handleDelete = async (id: number) => {
+  try {
+    await deleteReservation(id)
+    message.success('删除成功')
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '删除失败')
+  }
 }
 
 /* ---------- Init ---------- */

@@ -56,4 +56,15 @@ public class PaymentController {
         PageResult<Payment> result = paymentService.getAllPayments(page, size, status, keyword);
         return Result.success(result);
     }
+
+    /**
+     * 删除支付记录（管理员）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deletePayment(@PathVariable Long id) {
+        log.info("管理员删除支付记录: id={}", id);
+        paymentService.removeById(id);
+        return Result.success();
+    }
 }

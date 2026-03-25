@@ -33,4 +33,15 @@ public class AuditLogController {
         PageResult<AuditLog> result = auditLogService.getLogs(page, size, module, action);
         return Result.success(result);
     }
+
+    /**
+     * 删除审计日志（管理员）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteLog(@PathVariable Long id) {
+        log.info("管理员删除审计日志: id={}", id);
+        auditLogService.removeById(id);
+        return Result.success();
+    }
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
-import { getVehicles, deleteVehicle } from '@/api/vehicle'
+import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { getVehicles, addVehicle, updateVehicle, deleteVehicle } from '@/api/vehicle'
 import dayjs from 'dayjs'
 
 /* ---------- Types ---------- */
@@ -93,6 +93,68 @@ function handleReset() {
   fetchData()
 }
 
+/* ---------- Add / Edit Modal ---------- */
+const modalVisible = ref(false)
+const modalLoading = ref(false)
+const isEdit = ref(false)
+const formData = reactive({
+  id: 0,
+  plateNumber: '',
+  vehicleType: 'SEDAN',
+  brand: '',
+  color: '',
+})
+
+function resetForm() {
+  formData.id = 0
+  formData.plateNumber = ''
+  formData.vehicleType = 'SEDAN'
+  formData.brand = ''
+  formData.color = ''
+}
+
+function handleAdd() {
+  resetForm()
+  isEdit.value = false
+  modalVisible.value = true
+}
+
+function handleEdit(record: VehicleRecord) {
+  formData.id = record.id
+  formData.plateNumber = record.plateNumber || ''
+  formData.vehicleType = record.vehicleType || 'SEDAN'
+  formData.brand = record.brand || ''
+  formData.color = record.color || ''
+  isEdit.value = true
+  modalVisible.value = true
+}
+
+async function handleSubmit() {
+  if (!formData.plateNumber) { message.warning('请输入车牌号'); return }
+  modalLoading.value = true
+  try {
+    const payload = {
+      plateNumber: formData.plateNumber,
+      vehicleType: formData.vehicleType,
+      brand: formData.brand,
+      color: formData.color,
+    }
+    if (isEdit.value) {
+      await updateVehicle(formData.id, payload)
+      message.success('更新成功')
+    } else {
+      await addVehicle(payload)
+      message.success('新增成功')
+    }
+    modalVisible.value = false
+    fetchData()
+  } catch {
+    message.error(isEdit.value ? '更新失败' : '新增失败')
+  } finally {
+    modalLoading.value = false
+  }
+}
+
 /* ---------- Delete ---------- */
 async function handleDelete(id: number) {
   try {
@@ -146,6 +208,12 @@ onMounted(() => {
           重置
         </a-button>
       </div>
+      <div class="toolbar-right">
+        <a-button type="primary" @click="handleAdd">
+          <template #icon><PlusOutlined /></template>
+          新增车辆
+        </a-button>
+      </div>
     </div>
 
     <!-- Table -->
@@ -173,16 +241,48 @@ onMounted(() => {
           {{ formatDate(record.createdAt) }}
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-popconfirm
-            title="确定删除该车辆？"
-            ok-text="确定"
-            cancel-text="取消"
-            @confirm="handleDelete(record.id)"
-          >
-            <a-button type="link" danger size="small">删除</a-button>
-          </a-popconfirm>
+          <a-space>
+            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+            <a-popconfirm
+              title="确定删除该车辆？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDelete(record.id)"
+            >
+              <a-button type="link" danger size="small">删除</a-button>
+            </a-popconfirm>
+          </a-space>
         </template>
       </template>
     </a-table>
+
+    <!-- Add / Edit Modal -->
+    <a-modal
+      v-model:open="modalVisible"
+      :title="isEdit ? '编辑车辆' : '新增车辆'"
+      :confirm-loading="modalLoading"
+      @ok="handleSubmit"
+    >
+      <a-form :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }" style="margin-top: 16px">
+        <a-form-item label="车牌号" required>
+          <a-input v-model:value="formData.plateNumber" placeholder="请输入车牌号" />
+        </a-form-item>
+        <a-form-item label="车辆类型">
+          <a-select v-model:value="formData.vehicleType">
+            <a-select-option value="SEDAN">普通轿车</a-select-option>
+            <a-select-option value="SUV">SUV</a-select-option>
+            <a-select-option value="TRUCK">货车</a-select-option>
+            <a-select-option value="MOTORCYCLE">摩托车</a-select-option>
+            <a-select-option value="ELECTRIC">新能源</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="品牌">
+          <a-input v-model:value="formData.brand" placeholder="请输入品牌" />
+        </a-form-item>
+        <a-form-item label="颜色">
+          <a-input v-model:value="formData.color" placeholder="请输入颜色" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>

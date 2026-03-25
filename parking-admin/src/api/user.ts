@@ -4,6 +4,10 @@ export function getUsers(params: { page: number; size: number; keyword?: string;
   return request.get('/users', { params })
 }
 
+export function createUser(data: any) {
+  return request.post('/auth/register', data)
+}
+
 export function getUserById(id: number) {
   return request.get(`/users/${id}`)
 }

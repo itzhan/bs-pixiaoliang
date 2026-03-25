@@ -91,4 +91,15 @@ public class ParkingOrderController {
         parkingOrderService.markAbnormal(id);
         return Result.success();
     }
+
+    /**
+     * 删除订单（管理员）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteOrder(@PathVariable Long id) {
+        log.info("管理员删除订单: id={}", id);
+        parkingOrderService.removeById(id);
+        return Result.success();
+    }
 }

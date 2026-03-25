@@ -65,7 +65,7 @@ function handleMenuSelect(key: string) {
 const dropdownOptions = [
   { label: '个人中心', key: 'profile', icon: () => h(NIcon, { size: 16 }, { default: () => h(PersonCircleOutline) }) },
   { label: '我的车辆', key: 'vehicles', icon: () => h(NIcon, { size: 16 }, { default: () => h(CarOutline) }) },
-  { label: '我的预约', key: 'reservation', icon: () => h(NIcon, { size: 16 }, { default: () => h(CalendarOutline) }) },
+  { label: '我的预约', key: 'reservations', icon: () => h(NIcon, { size: 16 }, { default: () => h(CalendarOutline) }) },
   { label: '我的订单', key: 'orders', icon: () => h(NIcon, { size: 16 }, { default: () => h(ReceiptOutline) }) },
   { type: 'divider' as const, key: 'd1' },
   { label: '退出登录', key: 'logout', icon: () => h(NIcon, { size: 16 }, { default: () => h(LogOutOutline) }) },

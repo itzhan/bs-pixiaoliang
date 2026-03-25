@@ -33,4 +33,15 @@ public class EntryExitLogController {
         PageResult<EntryExitLog> result = entryExitLogService.getLogs(page, size, plateNumber, logType);
         return Result.success(result);
     }
+
+    /**
+     * 删除出入场记录（管理员）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteLog(@PathVariable Long id) {
+        log.info("管理员删除出入场记录: id={}", id);
+        entryExitLogService.removeById(id);
+        return Result.success();
+    }
 }

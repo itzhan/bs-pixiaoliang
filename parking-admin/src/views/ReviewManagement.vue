@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
-import { getAllReviews, replyReview, updateReviewStatus } from '@/api/review'
+import { getAllReviews, replyReview, updateReviewStatus, deleteReview } from '@/api/review'
 
 /* ---------- Status map ---------- */
 const statusMap: Record<number, { label: string; color: string }> = {
@@ -30,7 +30,7 @@ const columns = [
   { title: '回复时间', dataIndex: 'replyAt', width: 170 },
   { title: '状态', dataIndex: 'status', width: 90 },
   { title: '创建时间', dataIndex: 'createdAt', width: 170 },
-  { title: '操作', key: 'action', width: 160, fixed: 'right' as const },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
 ]
 
 async function fetchData() {
@@ -115,6 +115,17 @@ function formatDate(val: string) {
 }
 
 onMounted(fetchData)
+
+/* ---------- Delete ---------- */
+async function handleDeleteReview(id: number) {
+  try {
+    await deleteReview(id)
+    message.success('删除成功')
+    fetchData()
+  } catch {
+    message.error('删除失败')
+  }
+}
 </script>
 
 <template>
@@ -191,6 +202,14 @@ onMounted(fetchData)
               <a-button type="link" size="small">
                 {{ record.status === 1 ? '隐藏' : '显示' }}
               </a-button>
+            </a-popconfirm>
+            <a-popconfirm
+              title="确定删除该评价？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDeleteReview(record.id)"
+            >
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>

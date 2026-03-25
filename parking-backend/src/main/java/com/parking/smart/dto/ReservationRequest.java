@@ -22,4 +22,9 @@ public class ReservationRequest {
     @NotNull(message = "结束时间不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
+
+    /**
+     * 是否立即支付
+     */
+    private Boolean payNow = false;
 }

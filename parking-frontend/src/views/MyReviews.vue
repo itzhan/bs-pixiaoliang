@@ -84,9 +84,12 @@
       <n-modal v-model:show="createModalVisible" preset="card" title="发表评价" style="max-width: 480px">
         <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="top">
           <n-form-item label="关联订单" path="orderId">
-            <n-input
-              v-model:value="formData.orderIdStr"
-              placeholder="请输入订单编号"
+            <n-select
+              v-model:value="formData.orderId"
+              :options="orderOptions"
+              :loading="ordersLoading"
+              placeholder="请选择已完成的订单"
+              filterable
             />
           </n-form-item>
           <n-form-item label="评分" path="rating">
@@ -115,10 +118,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useMessage, NIcon, type FormInst } from 'naive-ui'
 import dayjs from 'dayjs'
 import { getMyReviews, createReview } from '@/api/review'
+import { getMyOrders } from '@/api/order'
 import {
   StarOutline,
   CreateOutline,
@@ -163,28 +167,52 @@ async function fetchList() {
   }
 }
 
+// --- Completed Orders for dropdown ---
+const ordersLoading = ref(false)
+const completedOrders = ref<any[]>([])
+
+const orderOptions = computed(() =>
+  completedOrders.value.map((o) => ({
+    label: `${o.orderNo || o.id} (${o.plateNumber || '—'} · ${formatTime(o.entryTime)})`,
+    value: o.id,
+  })),
+)
+
+async function loadCompletedOrders() {
+  ordersLoading.value = true
+  try {
+    const res: any = await getMyOrders({ status: '1', page: 1, size: 100 })
+    completedOrders.value = res.data?.records ?? []
+  } catch {
+    /* handled by interceptor */
+  } finally {
+    ordersLoading.value = false
+  }
+}
+
 // --- Create Review ---
 const createModalVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInst | null>(null)
 
 const formData = reactive({
-  orderIdStr: '',
+  orderId: null as number | null,
   rating: 5,
   content: '',
 })
 
 const formRules = {
-  orderIdStr: { required: true, message: '请输入订单编号', trigger: 'blur' },
+  orderId: { required: true, type: 'number' as const, message: '请选择订单', trigger: 'change' },
   rating: { required: true, type: 'number' as const, min: 1, message: '请选择评分', trigger: 'change' },
   content: { required: true, message: '请输入评价内容', trigger: 'blur' },
 }
 
 function openCreateModal() {
-  formData.orderIdStr = ''
+  formData.orderId = null
   formData.rating = 5
   formData.content = ''
   createModalVisible.value = true
+  loadCompletedOrders()
 }
 
 async function handleCreate() {
@@ -194,16 +222,15 @@ async function handleCreate() {
     return
   }
 
-  const orderId = parseInt(formData.orderIdStr, 10)
-  if (isNaN(orderId) || orderId <= 0) {
-    message.warning('请输入有效的订单编号')
+  if (!formData.orderId) {
+    message.warning('请选择订单')
     return
   }
 
   submitLoading.value = true
   try {
     await createReview({
-      orderId,
+      orderId: formData.orderId,
       rating: formData.rating,
       content: formData.content,
     })

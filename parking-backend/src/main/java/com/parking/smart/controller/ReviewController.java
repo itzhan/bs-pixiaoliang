@@ -80,4 +80,15 @@ public class ReviewController {
         reviewService.updateReviewStatus(id, status);
         return Result.success();
     }
+
+    /**
+     * 删除评价（管理员）
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> deleteReview(@PathVariable Long id) {
+        log.info("管理员删除评价: id={}", id);
+        reviewService.removeById(id);
+        return Result.success();
+    }
 }

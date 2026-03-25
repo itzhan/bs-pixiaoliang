@@ -44,11 +44,6 @@
         <template v-if="column.dataIndex === 'amount'">
           ¥{{ (record.amount ?? 0).toFixed(2) }}
         </template>
-        <template v-if="column.dataIndex === 'paymentMethod'">
-          <a-tag :color="methodMap[record.paymentMethod]?.color ?? 'default'">
-            {{ methodMap[record.paymentMethod]?.label ?? record.paymentMethod }}
-          </a-tag>
-        </template>
         <template v-if="column.dataIndex === 'status'">
           <a-tag :color="statusMap[record.status]?.color ?? 'default'">
             {{ statusMap[record.status]?.label ?? '未知' }}
@@ -56,6 +51,16 @@
         </template>
         <template v-if="column.dataIndex === 'paidAt'">
           {{ formatDate(record.paidAt) }}
+        </template>
+        <template v-if="column.key === 'action'">
+          <a-popconfirm
+            title="确定删除该支付记录？"
+            ok-text="确定"
+            cancel-text="取消"
+            @confirm="handleDelete(record.id)"
+          >
+            <a-button type="link" size="small" danger>删除</a-button>
+          </a-popconfirm>
         </template>
       </template>
     </a-table>
@@ -66,16 +71,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { getAllPayments } from '@/api/payment'
+import { getAllPayments, deletePayment } from '@/api/payment'
 
 /* ---------- Maps ---------- */
-const methodMap: Record<string, { label: string; color: string }> = {
-  WECHAT: { label: '微信支付', color: 'green' },
-  ALIPAY: { label: '支付宝', color: 'blue' },
-  CASH: { label: '现金', color: 'gray' },
-  CARD: { label: '刷卡', color: 'purple' },
-}
-
 const statusMap: Record<number, { label: string; color: string }> = {
   0: { label: '待支付', color: 'orange' },
   1: { label: '支付成功', color: 'green' },
@@ -88,10 +86,10 @@ const columns = [
   { title: '订单号', dataIndex: 'orderNo', width: 160 },
   { title: '用户', dataIndex: 'userName', width: 100 },
   { title: '金额(¥)', dataIndex: 'amount', width: 100 },
-  { title: '支付方式', dataIndex: 'paymentMethod', width: 110 },
   { title: '状态', dataIndex: 'status', width: 100 },
   { title: '支付时间', dataIndex: 'paidAt', width: 170 },
   { title: '备注', dataIndex: 'remark', ellipsis: true },
+  { title: '操作', key: 'action', width: 100, fixed: 'right' as const },
 ]
 
 /* ---------- State ---------- */
@@ -123,7 +121,7 @@ const fetchData = async () => {
       page: pagination.current,
       size: pagination.pageSize,
     }
-    if (searchParams.status !== undefined && searchParams.status !== '') {
+    if (searchParams.status !== undefined) {
       params.status = searchParams.status
     }
     if (searchParams.keyword) {
@@ -162,6 +160,17 @@ const handleTableChange = (pag: any) => {
 onMounted(() => {
   fetchData()
 })
+
+/* ---------- Delete ---------- */
+const handleDelete = async (id: number) => {
+  try {
+    await deletePayment(id)
+    message.success('删除成功')
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '删除失败')
+  }
+}
 </script>
 
 <style scoped>
