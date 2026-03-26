@@ -24,7 +24,7 @@ public class EntryExitLogController {
      * 分页查询进出场记录（管理员）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<PageResult<EntryExitLog>> getLogs(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,

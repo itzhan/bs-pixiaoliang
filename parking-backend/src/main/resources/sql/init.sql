@@ -79,7 +79,7 @@ CREATE TABLE parking_area (
     description      TEXT         DEFAULT NULL              COMMENT '描述',
     total_spaces     INT          NOT NULL DEFAULT 0        COMMENT '总车位数',
     available_spaces INT          NOT NULL DEFAULT 0        COMMENT '可用车位数',
-    floor_number     INT          DEFAULT 1                 COMMENT '楼层',
+    floor_number     VARCHAR(20)  DEFAULT '1'               COMMENT '楼层',
     area_type        VARCHAR(20)  DEFAULT 'INDOOR'          COMMENT '类型：INDOOR/OUTDOOR/UNDERGROUND',
     status           TINYINT      NOT NULL DEFAULT 1        COMMENT '状态：0=禁用 1=启用',
     created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -125,6 +125,7 @@ CREATE TABLE reservation (
     status          TINYINT       NOT NULL DEFAULT 0       COMMENT '状态：0=待确认 1=已确认 2=已取消 3=已过期 4=已完成',
     cancel_reason   VARCHAR(255)  DEFAULT NULL             COMMENT '取消原因',
     amount          DECIMAL(10,2) DEFAULT NULL             COMMENT '预约费用',
+    payment_status  TINYINT       NOT NULL DEFAULT 0       COMMENT '支付状态：0=待支付 1=已支付',
     created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted         TINYINT       NOT NULL DEFAULT 0,
@@ -358,9 +359,9 @@ CREATE TABLE audit_log (
 --  初始数据
 -- ============================================================
 
--- 默认管理员（密码：admin123 的 BCrypt 值）
+-- 默认管理员（密码：admin123）
 INSERT INTO sys_user (username, password, real_name, phone, role, status)
-VALUES ('admin', '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36PQm4sDPQ/EHGLcrFNPO7i', '系统管理员', '13800000000', 'ADMIN', 1);
+VALUES ('admin', '$2a$10$8WPgDfclLizTIruqh3o98ODvaFBhwqMYsk6xWBIiyE2indeGR5bfq', '系统管理员', '13800000000', 'ADMIN', 1);
 
 -- 默认计费规则
 INSERT INTO billing_rule (name, space_type, hourly_rate, daily_cap, free_minutes, is_active, description)

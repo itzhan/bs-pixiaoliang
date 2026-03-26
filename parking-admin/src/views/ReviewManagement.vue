@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { getAllReviews, replyReview, updateReviewStatus, deleteReview } from '@/api/review'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'ADMIN')
 
 /* ---------- Status map ---------- */
 const statusMap: Record<number, { label: string; color: string }> = {
@@ -196,6 +200,7 @@ async function handleDeleteReview(id: number) {
           <a-space>
             <a-button type="link" size="small" @click="openReply(record)">回复</a-button>
             <a-popconfirm
+              v-if="isAdmin"
               :title="`确定${record.status === 1 ? '隐藏' : '显示'}该评价？`"
               @confirm="handleToggleStatus(record)"
             >
@@ -204,6 +209,7 @@ async function handleDeleteReview(id: number) {
               </a-button>
             </a-popconfirm>
             <a-popconfirm
+              v-if="isAdmin"
               title="确定删除该评价？"
               ok-text="确定"
               cancel-text="取消"

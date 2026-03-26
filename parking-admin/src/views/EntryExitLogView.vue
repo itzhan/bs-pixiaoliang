@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import { getLogs, deleteLog } from '@/api/entryExitLog'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'ADMIN')
 
 /* ---------- Log type map ---------- */
 const logTypeMap: Record<string, { label: string; color: string }> = {
@@ -152,6 +156,7 @@ async function handleDeleteLog(id: number) {
 
         <template v-else-if="column.key === 'action'">
           <a-popconfirm
+            v-if="isAdmin"
             title="确定删除该日志？"
             ok-text="确定"
             cancel-text="取消"
@@ -159,6 +164,7 @@ async function handleDeleteLog(id: number) {
           >
             <a-button type="link" size="small" danger>删除</a-button>
           </a-popconfirm>
+          <span v-else>-</span>
         </template>
       </template>
     </a-table>

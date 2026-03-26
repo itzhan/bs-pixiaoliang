@@ -88,6 +88,7 @@
               <a-button type="link" size="small" danger>标记异常</a-button>
             </a-popconfirm>
             <a-popconfirm
+              v-if="isAdmin"
               title="确定删除该订单？"
               ok-text="确定"
               cancel-text="取消"
@@ -196,12 +197,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { getAllOrders, vehicleEntry, vehicleExit, markAbnormal, deleteOrder } from '@/api/order'
 import { getAvailableSpaces } from '@/api/parkingSpace'
 import { getReservationsByPlate } from '@/api/reservation'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'ADMIN')
 
 /* ---------- Status Maps ---------- */
 const orderStatusMap: Record<number, { label: string; color: string }> = {

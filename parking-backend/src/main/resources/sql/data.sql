@@ -6,25 +6,25 @@ SET CHARACTER_SET_CLIENT = utf8mb4;
 SET CHARACTER_SET_RESULTS = utf8mb4;
 SET CHARACTER_SET_CONNECTION = utf8mb4;
 
--- ============================================================
 -- 1. sys_user（系统用户）
+-- 管理员/操作员密码：admin123    普通用户密码：user123
 -- ============================================================
 INSERT IGNORE INTO sys_user (id, username, password, role, real_name, phone, email, avatar, status, created_at, updated_at) VALUES
-(1,  'admin',     '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'ADMIN',    '系统管理员', '13800000000', 'admin@smartparking.com',    'https://picsum.photos/seed/admin_avatar/200/200',     1, '2025-01-01 08:00:00', '2025-01-01 08:00:00'),
-(2,  'operator1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'OPERATOR', '张操作员',   '13800000001', 'operator1@smartparking.com', 'https://picsum.photos/seed/operator1_avatar/200/200', 1, '2025-01-05 09:30:00', '2025-01-05 09:30:00'),
-(3,  'operator2', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'OPERATOR', '王操作员',   '13800000002', 'operator2@smartparking.com', 'https://picsum.photos/seed/operator2_avatar/200/200', 1, '2025-02-10 10:00:00', '2025-02-10 10:00:00'),
-(4,  'user1',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '李明',       '13912345001', 'liming@example.com',       'https://picsum.photos/seed/user1_liming/200/200',     1, '2025-03-15 14:20:00', '2025-03-15 14:20:00'),
-(5,  'user2',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '王小红',     '13912345002', 'wangxiaohong@example.com', 'https://picsum.photos/seed/user2_xiaohong/200/200',   1, '2025-04-20 11:10:00', '2025-04-20 11:10:00'),
-(6,  'user3',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '赵建国',     '13912345003', 'zhaojianguo@example.com',  'https://picsum.photos/seed/user3_jianguo/200/200',    1, '2025-05-08 16:45:00', '2025-05-08 16:45:00'),
-(7,  'user4',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '刘雨晴',     '13912345004', 'liuyuqing@example.com',    'https://picsum.photos/seed/user4_yuqing/200/200',     1, '2025-06-12 09:00:00', '2025-06-12 09:00:00'),
-(8,  'user5',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '陈志远',     '13912345005', 'chenzhiyuan@example.com',  'https://picsum.photos/seed/user5_zhiyuan/200/200',    1, '2025-07-03 13:30:00', '2025-07-03 13:30:00'),
-(9,  'user6',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '孙悦',       '13912345006', 'sunyue@example.com',       'https://picsum.photos/seed/user6_sunyue/200/200',     1, '2025-08-18 17:20:00', '2025-08-18 17:20:00'),
-(10, 'user7',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '周文博',     '13912345007', 'zhouwenbo@example.com',    'https://picsum.photos/seed/user7_wenbo/200/200',      1, '2025-09-25 08:15:00', '2025-09-25 08:15:00'),
-(11, 'user8',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '吴芳',       '13912345008', 'wufang@example.com',       'https://picsum.photos/seed/user8_wufang/200/200',     1, '2025-10-10 10:50:00', '2025-10-10 10:50:00'),
-(12, 'user9',     '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '郑浩然',     '13912345009', 'zhenghaoran@example.com',  'https://picsum.photos/seed/user9_haoran/200/200',     1, '2025-11-05 15:00:00', '2025-11-05 15:00:00'),
-(13, 'user10',    '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '林晓峰',     '13912345010', 'linxiaofeng@example.com',  'https://picsum.photos/seed/user10_xiaofeng/200/200',  1, '2025-11-20 12:30:00', '2025-11-20 12:30:00'),
-(14, 'user11',    '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '黄丽娟',     '13912345011', 'huanglijuan@example.com',  'https://picsum.photos/seed/user11_lijuan/200/200',    0, '2025-12-01 09:10:00', '2025-12-01 09:10:00'),
-(15, 'user12',    '$2a$10$ySG2lkvFSEWlJMQJkCQr0OLfRPB.4dIG7cKR5t0CZeyVCJFMI3TP.', 'USER',     '杨晨光',     '13912345012', 'yangchenguang@example.com', 'https://picsum.photos/seed/user12_chenguang/200/200', 1, '2025-12-15 18:00:00', '2025-12-15 18:00:00');
+(1,  'admin',     '$2a$10$8WPgDfclLizTIruqh3o98ODvaFBhwqMYsk6xWBIiyE2indeGR5bfq', 'ADMIN',    '系统管理员', '13800000000', 'admin@smartparking.com',    'https://picsum.photos/seed/admin_avatar/200/200',     1, '2025-01-01 08:00:00', '2025-01-01 08:00:00'),
+(2,  'operator1', '$2a$10$8WPgDfclLizTIruqh3o98ODvaFBhwqMYsk6xWBIiyE2indeGR5bfq', 'OPERATOR', '张操作员',   '13800000001', 'operator1@smartparking.com', 'https://picsum.photos/seed/operator1_avatar/200/200', 1, '2025-01-05 09:30:00', '2025-01-05 09:30:00'),
+(3,  'operator2', '$2a$10$8WPgDfclLizTIruqh3o98ODvaFBhwqMYsk6xWBIiyE2indeGR5bfq', 'OPERATOR', '王操作员',   '13800000002', 'operator2@smartparking.com', 'https://picsum.photos/seed/operator2_avatar/200/200', 1, '2025-02-10 10:00:00', '2025-02-10 10:00:00'),
+(4,  'user1',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '李明',       '13912345001', 'liming@example.com',       'https://picsum.photos/seed/user1_liming/200/200',     1, '2025-03-15 14:20:00', '2025-03-15 14:20:00'),
+(5,  'user2',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '王小红',     '13912345002', 'wangxiaohong@example.com', 'https://picsum.photos/seed/user2_xiaohong/200/200',   1, '2025-04-20 11:10:00', '2025-04-20 11:10:00'),
+(6,  'user3',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '赵建国',     '13912345003', 'zhaojianguo@example.com',  'https://picsum.photos/seed/user3_jianguo/200/200',    1, '2025-05-08 16:45:00', '2025-05-08 16:45:00'),
+(7,  'user4',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '刘雨晴',     '13912345004', 'liuyuqing@example.com',    'https://picsum.photos/seed/user4_yuqing/200/200',     1, '2025-06-12 09:00:00', '2025-06-12 09:00:00'),
+(8,  'user5',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '陈志远',     '13912345005', 'chenzhiyuan@example.com',  'https://picsum.photos/seed/user5_zhiyuan/200/200',    1, '2025-07-03 13:30:00', '2025-07-03 13:30:00'),
+(9,  'user6',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '孙悦',       '13912345006', 'sunyue@example.com',       'https://picsum.photos/seed/user6_sunyue/200/200',     1, '2025-08-18 17:20:00', '2025-08-18 17:20:00'),
+(10, 'user7',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '周文博',     '13912345007', 'zhouwenbo@example.com',    'https://picsum.photos/seed/user7_wenbo/200/200',      1, '2025-09-25 08:15:00', '2025-09-25 08:15:00'),
+(11, 'user8',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '吴芳',       '13912345008', 'wufang@example.com',       'https://picsum.photos/seed/user8_wufang/200/200',     1, '2025-10-10 10:50:00', '2025-10-10 10:50:00'),
+(12, 'user9',     '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '郑浩然',     '13912345009', 'zhenghaoran@example.com',  'https://picsum.photos/seed/user9_haoran/200/200',     1, '2025-11-05 15:00:00', '2025-11-05 15:00:00'),
+(13, 'user10',    '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '林晓峰',     '13912345010', 'linxiaofeng@example.com',  'https://picsum.photos/seed/user10_xiaofeng/200/200',  1, '2025-11-20 12:30:00', '2025-11-20 12:30:00'),
+(14, 'user11',    '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '黄丽娟',     '13912345011', 'huanglijuan@example.com',  'https://picsum.photos/seed/user11_lijuan/200/200',    0, '2025-12-01 09:10:00', '2025-12-01 09:10:00'),
+(15, 'user12',    '$2a$10$pntsggD.WZmQ5hMoyP5Z3O1Ne.I5feWoUb8IXZTyoLJb9avcpQGoq', 'USER',     '杨晨光',     '13912345012', 'yangchenguang@example.com', 'https://picsum.photos/seed/user12_chenguang/200/200', 1, '2025-12-15 18:00:00', '2025-12-15 18:00:00');
 
 -- ============================================================
 -- 2. vehicle（车辆信息）
@@ -57,12 +57,12 @@ INSERT IGNORE INTO vehicle (id, user_id, plate_number, vehicle_type, brand, colo
 -- 3. parking_area（停车区域）
 -- ============================================================
 INSERT IGNORE INTO parking_area (id, name, code, area_type, floor_number, total_spaces, available_spaces, status, description, created_at, updated_at) VALUES
-(1, 'A区-地上停车场', 'AREA-A', 'OUTDOOR',      1,  50, 42, 1, '位于停车场东侧地面，采光良好，适合短时停放',       '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-(2, 'B区-地下一层', 'AREA-B',   'UNDERGROUND', -1,  80, 71, 1, '地下一层主停车区，配备通风系统和监控摄像',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-(3, 'C区-地下二层', 'AREA-C',   'UNDERGROUND', -2,  60, 55, 1, '地下二层停车区，空间宽敞，设有无障碍车位',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-(4, 'D区-VIP专区', 'AREA-D',    'INDOOR',       1,  20, 16, 1, 'VIP专属停车区域，独立出入口，24小时专人管理',      '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-(5, 'E区-充电桩区', 'AREA-E',   'OUTDOOR',      1,  30, 26, 1, '新能源车充电专区，配备快充和慢充桩各15个',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
-(6, 'F区-临时停车区', 'AREA-F', 'OUTDOOR',      1,  40, 36, 1, '临时停车专用区域，前15分钟免费，适合即停即走',     '2025-01-01 00:00:00', '2025-01-01 00:00:00');
+(1, 'A区-地上停车场', 'AREA-A', 'OUTDOOR',      '1',   50, 42, 1, '位于停车场东侧地面，采光良好，适合短时停放',       '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+(2, 'B区-地下一层', 'AREA-B',   'UNDERGROUND', 'B1',   80, 71, 1, '地下一层主停车区，配备通风系统和监控摄像',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+(3, 'C区-地下二层', 'AREA-C',   'UNDERGROUND', 'B2',   60, 55, 1, '地下二层停车区，空间宽敞，设有无障碍车位',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+(4, 'D区-VIP专区', 'AREA-D',    'INDOOR',       '1',   20, 16, 1, 'VIP专属停车区域，独立出入口，24小时专人管理',      '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+(5, 'E区-充电桩区', 'AREA-E',   'OUTDOOR',      '1',   30, 26, 1, '新能源车充电专区，配备快充和慢充桩各15个',         '2025-01-01 00:00:00', '2025-01-01 00:00:00'),
+(6, 'F区-临时停车区', 'AREA-F', 'OUTDOOR',      '1',   40, 36, 1, '临时停车专用区域，前15分钟免费，适合即停即走',     '2025-01-01 00:00:00', '2025-01-01 00:00:00');
 
 -- ============================================================
 -- 4. parking_space（停车位）

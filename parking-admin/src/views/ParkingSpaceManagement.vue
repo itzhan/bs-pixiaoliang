@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { getSpaces, createSpace, updateSpace, updateSpaceStatus, deleteSpace } from '@/api/parkingSpace'
 import { getAllAreas } from '@/api/parkingArea'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'ADMIN')
 
 /* ---------- Types ---------- */
 interface AreaOption {
@@ -307,7 +311,7 @@ onMounted(() => {
         </a-button>
       </div>
       <div class="toolbar-right">
-        <a-button type="primary" @click="handleAdd">
+        <a-button v-if="isAdmin" type="primary" @click="handleAdd">
           <template #icon><PlusOutlined /></template>
           新增车位
         </a-button>
@@ -343,9 +347,10 @@ onMounted(() => {
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
-            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+            <a-button v-if="isAdmin" type="link" size="small" @click="handleEdit(record)">编辑</a-button>
             <a-button type="link" size="small" @click="handleStatusUpdate(record)">更新状态</a-button>
             <a-popconfirm
+              v-if="isAdmin"
               title="确定删除该车位？"
               ok-text="确定"
               cancel-text="取消"

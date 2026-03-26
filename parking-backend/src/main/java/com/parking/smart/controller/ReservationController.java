@@ -87,7 +87,7 @@ public class ReservationController {
      * 查询所有预约（管理员）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<PageResult<Reservation>> getAllReservations(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -117,7 +117,7 @@ public class ReservationController {
      * 管理员更新预约状态
      */
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Void> updateReservationStatus(@PathVariable Long id,
                                                  @RequestParam Integer status) {
         log.info("管理员更新预约状态: id={}, status={}", id, status);

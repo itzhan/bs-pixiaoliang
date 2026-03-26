@@ -48,7 +48,7 @@ public class ReviewController {
      * 查询所有评价（管理员）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<PageResult<Review>> getAllReviews(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -61,7 +61,7 @@ public class ReviewController {
      * 回复评价（管理员）
      */
     @PutMapping("/{id}/reply")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Void> replyReview(@PathVariable Long id,
                                     @Valid @RequestBody ReviewReplyRequest request) {
         log.info("回复评价: id={}", id);

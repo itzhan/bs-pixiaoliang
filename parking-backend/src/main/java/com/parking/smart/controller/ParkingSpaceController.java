@@ -76,7 +76,7 @@ public class ParkingSpaceController {
      * 更新停车位状态（管理员）
      */
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Void> updateSpaceStatus(@PathVariable Long id,
                                           @RequestParam Integer status) {
         log.info("更新停车位状态: id={}, status={}", id, status);

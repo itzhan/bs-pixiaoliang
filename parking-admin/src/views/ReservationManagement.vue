@@ -51,6 +51,7 @@
           <a-space>
             <a-button type="link" size="small" @click="viewDetail(record)">详情</a-button>
             <a-popconfirm
+              v-if="isAdmin"
               title="确定删除该预约？"
               ok-text="确定"
               cancel-text="取消"
@@ -90,10 +91,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { getAllReservations, deleteReservation } from '@/api/reservation'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'ADMIN')
 
 /* ---------- Status Maps ---------- */
 const paymentStatusMap: Record<number, { label: string; color: string }> = {

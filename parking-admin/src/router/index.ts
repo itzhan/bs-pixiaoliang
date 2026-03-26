@@ -21,25 +21,25 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/DashboardView.vue'),
-        meta: { title: '数据概览' },
+        meta: { title: '数据概览', roles: ['ADMIN'] },
       },
       {
         path: 'users',
         name: 'UserManagement',
         component: () => import('@/views/UserManagement.vue'),
-        meta: { title: '用户列表' },
+        meta: { title: '用户列表', roles: ['ADMIN'] },
       },
       {
         path: 'vehicles',
         name: 'VehicleManagement',
         component: () => import('@/views/VehicleManagement.vue'),
-        meta: { title: '车辆管理' },
+        meta: { title: '车辆管理', roles: ['ADMIN'] },
       },
       {
         path: 'parking-areas',
         name: 'ParkingAreaManagement',
         component: () => import('@/views/ParkingAreaManagement.vue'),
-        meta: { title: '停车区域' },
+        meta: { title: '停车区域', roles: ['ADMIN'] },
       },
       {
         path: 'parking-spaces',
@@ -63,7 +63,7 @@ const routes: RouteRecordRaw[] = [
         path: 'billing-rules',
         name: 'BillingRuleManagement',
         component: () => import('@/views/BillingRuleManagement.vue'),
-        meta: { title: '计费规则' },
+        meta: { title: '计费规则', roles: ['ADMIN'] },
       },
       {
         path: 'blacklist',
@@ -75,13 +75,13 @@ const routes: RouteRecordRaw[] = [
         path: 'payments',
         name: 'PaymentManagement',
         component: () => import('@/views/PaymentManagement.vue'),
-        meta: { title: '支付记录' },
+        meta: { title: '支付记录', roles: ['ADMIN'] },
       },
       {
         path: 'announcements',
         name: 'AnnouncementManagement',
         component: () => import('@/views/AnnouncementManagement.vue'),
-        meta: { title: '公告管理' },
+        meta: { title: '公告管理', roles: ['ADMIN'] },
       },
       {
         path: 'reviews',
@@ -122,6 +122,17 @@ router.beforeEach((to, _from, next) => {
     next({ path: '/login', query: { redirect: to.fullPath } })
   } else if (to.path === '/login' && token) {
     next({ path: '/' })
+  } else if (requiresAuth && token) {
+    // 角色权限检查：如果路由配置了 roles，检查当前用户角色是否在允许列表中
+    const roles = to.meta.roles as string[] | undefined
+    const raw = localStorage.getItem('userInfo')
+    const userRole = raw ? JSON.parse(raw).role : ''
+    if (roles && roles.length > 0 && !roles.includes(userRole)) {
+      // 无权限，重定向到操作员首页
+      next({ path: '/orders', replace: true })
+    } else {
+      next()
+    }
   } else {
     next()
   }

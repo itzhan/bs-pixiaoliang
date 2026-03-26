@@ -26,7 +26,7 @@ public class BlacklistController {
      * 分页查询黑名单（管理员）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<PageResult<Blacklist>> getBlacklist(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -40,7 +40,7 @@ public class BlacklistController {
      * 添加到黑名单（管理员）
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Blacklist> addToBlacklist(@Valid @RequestBody BlacklistRequest request) {
         log.info("添加到黑名单: {}", request.getPlateNumber());
         Blacklist blacklist = blacklistService.addToBlacklist(request);
@@ -51,7 +51,7 @@ public class BlacklistController {
      * 从黑名单移除（管理员）
      */
     @PutMapping("/{id}/remove")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Void> removeFromBlacklist(@PathVariable Long id) {
         log.info("从黑名单移除: id={}", id);
         blacklistService.removeFromBlacklist(id);

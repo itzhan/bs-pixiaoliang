@@ -56,19 +56,20 @@ watch(
   { immediate: true },
 )
 
-// Sidebar menu items using Ant Design Vue 4 items prop
-const menuItems = computed<ItemType[]>(() => [
+// 全量菜单定义，roles 标记该项对哪些角色可见（不写 = 全部可见）
+const allMenuItems = [
   {
     key: '/dashboard',
     icon: () => h(DashboardOutlined),
     label: '数据概览',
+    roles: ['ADMIN'],
   },
   {
     key: 'parking',
     icon: () => h(CarOutlined),
     label: '停车管理',
     children: [
-      { key: '/parking-areas', label: '停车区域' },
+      { key: '/parking-areas', label: '停车区域', roles: ['ADMIN'] },
       { key: '/parking-spaces', label: '车位管理' },
       { key: '/reservations', label: '预约管理' },
       { key: '/orders', label: '停车订单' },
@@ -79,6 +80,7 @@ const menuItems = computed<ItemType[]>(() => [
     key: 'billing',
     icon: () => h(MoneyCollectOutlined),
     label: '计费管理',
+    roles: ['ADMIN'],
     children: [
       { key: '/billing-rules', label: '计费规则' },
       { key: '/payments', label: '支付记录' },
@@ -89,8 +91,8 @@ const menuItems = computed<ItemType[]>(() => [
     icon: () => h(TeamOutlined),
     label: '用户管理',
     children: [
-      { key: '/users', label: '用户列表' },
-      { key: '/vehicles', label: '车辆管理' },
+      { key: '/users', label: '用户列表', roles: ['ADMIN'] },
+      { key: '/vehicles', label: '车辆管理', roles: ['ADMIN'] },
       { key: '/blacklist', label: '黑名单' },
     ],
   },
@@ -99,12 +101,33 @@ const menuItems = computed<ItemType[]>(() => [
     icon: () => h(FileTextOutlined),
     label: '内容管理',
     children: [
-      { key: '/announcements', label: '公告管理' },
+      { key: '/announcements', label: '公告管理', roles: ['ADMIN'] },
       { key: '/reviews', label: '评价管理' },
     ],
   },
+]
 
-])
+// 根据角色过滤菜单
+function filterMenuByRole(items: any[], currentRole: string): ItemType[] {
+  return items
+    .filter((item) => !item.roles || item.roles.includes(currentRole))
+    .map((item) => {
+      if (item.children) {
+        const filteredChildren = item.children.filter(
+          (child: any) => !child.roles || child.roles.includes(currentRole),
+        )
+        // 如果子菜单全被过滤掉则隐藏整个分组
+        if (filteredChildren.length === 0) return null
+        return { ...item, children: filteredChildren }
+      }
+      return item
+    })
+    .filter(Boolean) as ItemType[]
+}
+
+const menuItems = computed<ItemType[]>(() =>
+  filterMenuByRole(allMenuItems, userStore.role),
+)
 
 function onMenuClick({ key }: { key: string }) {
   if (key.startsWith('/')) {

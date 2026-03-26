@@ -61,7 +61,7 @@ public class ParkingOrderController {
      * 查询所有订单（管理员）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<PageResult<ParkingOrder>> getAllOrders(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
@@ -85,7 +85,7 @@ public class ParkingOrderController {
      * 标记异常订单（管理员）
      */
     @PutMapping("/{id}/abnormal")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')")
     public Result<Void> markAbnormal(@PathVariable Long id) {
         log.info("标记异常订单: id={}", id);
         parkingOrderService.markAbnormal(id);
